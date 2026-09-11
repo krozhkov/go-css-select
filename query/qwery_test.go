@@ -391,6 +391,63 @@ func TestQwery(t *testing.T) {
 			assert.Equal(t, _selectAll(`ol > li[attr="boosh"]:last-child`, nil)[0], expected) // Found correct element
 		})
 
+		t.Run(":nth-child(odd|even|x)", func(t *testing.T) {
+			second := domutils.GetElementsByTagName("div", pseudos, false, math.MaxInt)[1]
+			assert.Len(t, selectAll("#pseudos :nth-child(odd)", nil), 4)             // Found 4 odd elements
+			assert.Len(t, selectAll("#pseudos div:nth-child(odd)", nil), 3)          // Found 3 odd elements with div tag
+			assert.Len(t, selectAll("#pseudos div:nth-child(even)", nil), 3)         // Found 3 even elements with div tag
+			assert.Equal(t, _selectAll("#pseudos div:nth-child(2)", nil)[0], second) // Found 2nd nth-child of pseudos
+		})
+
+		t.Run(":nth-child(expr)", func(t *testing.T) {
+			fifth := domutils.GetElementsByTagName("a", pseudos, false, math.MaxInt)[0]
+			sixth := domutils.GetElementsByTagName("div", pseudos, false, math.MaxInt)[4]
+
+			assert.Len(t, selectAll("#pseudos :nth-child(3n+1)", nil), 3)           // Found 3 elements
+			assert.Len(t, selectAll("#pseudos :nth-child(+3n-2)", nil), 3)          // Found 3 elements'
+			assert.Len(t, selectAll("#pseudos :nth-child(-n+6)", nil), 6)           // Found 6 elements
+			assert.Len(t, selectAll("#pseudos :nth-child(-n+5)", nil), 5)           // Found 5 elements
+			assert.Equal(t, _selectAll("#pseudos :nth-child(3n+2)", nil)[1], fifth) // Second :nth-child(3n+2) is the fifth child
+			assert.Equal(t, _selectAll("#pseudos :nth-child(3n)", nil)[1], sixth)   // Second :nth-child(3n) is the sixth child
+		})
+
+		t.Run(":nth-last-child(odd|even|x)", func(t *testing.T) {
+			second := domutils.GetElementsByTagName("div", pseudos, false, math.MaxInt)[1]
+			assert.Len(t, selectAll("#pseudos :nth-last-child(odd)", nil), 4)             // Found 4 odd elements
+			assert.Len(t, selectAll("#pseudos div:nth-last-child(odd)", nil), 3)          // Found 3 odd elements with div tag
+			assert.Len(t, selectAll("#pseudos div:nth-last-child(even)", nil), 3)         // Found 3 even elements with div tag
+			assert.Equal(t, _selectAll("#pseudos div:nth-last-child(6)", nil)[0], second) // 6th nth-last-child should be 2nd of 7 elements
+		})
+
+		t.Run(":nth-last-child(expr)", func(t *testing.T) {
+			third := domutils.GetElementsByTagName("div", pseudos, false, math.MaxInt)[2]
+
+			assert.Len(t, selectAll("#pseudos :nth-last-child(3n+1)", nil), 3)           // Found 3 elements
+			assert.Len(t, selectAll("#pseudos :nth-last-child(3n-2)", nil), 3)           // Found 3 elements
+			assert.Len(t, selectAll("#pseudos :nth-last-child(-n+6)", nil), 6)           // Found 6 elements
+			assert.Len(t, selectAll("#pseudos :nth-last-child(-n+5)", nil), 5)           // Found 5 elements
+			assert.Equal(t, _selectAll("#pseudos :nth-last-child(3n+2)", nil)[0], third) // First :nth-last-child(3n+2) is the third child
+		})
+
+		t.Run(":nth-of-type(expr)", func(t *testing.T) {
+			a := domutils.GetElementsByTagName("a", pseudos, false, math.MaxInt)[0]
+
+			assert.Len(t, selectAll("#pseudos div:nth-of-type(3n+1)", nil), 2)     // Found 2 div elements
+			assert.Len(t, selectAll("#pseudos a:nth-of-type(3n+1)", nil), 1)       // Found 1 a element
+			assert.Equal(t, _selectAll("#pseudos a:nth-of-type(3n+1)", nil)[0], a) // Found the right a element
+			assert.Len(t, selectAll("#pseudos a:nth-of-type(3n)", nil), 0)         // No matches for every third a
+			assert.Len(t, selectAll("#pseudos a:nth-of-type(odd)", nil), 1)        // Found the odd a
+			assert.Len(t, selectAll("#pseudos a:nth-of-type(1)", nil), 1)          // Found the first a
+		})
+
+		t.Run(":nth-last-of-type(expr)", func(t *testing.T) {
+			second := domutils.GetElementsByTagName("div", pseudos, false, math.MaxInt)[1]
+
+			assert.Len(t, selectAll("#pseudos div:nth-last-of-type(3n+1)", nil), 2)         // Found 2 div elements
+			assert.Len(t, selectAll("#pseudos a:nth-last-of-type(3n+1)", nil), 1)           // Found 1 a element
+			assert.Equal(t, _selectAll("#pseudos div:nth-last-of-type(5)", nil)[0], second) // 5th nth-last-of-type should be 2nd of 7 elements
+		})
+
 		t.Run(":first-of-type", func(t *testing.T) {
 			assert.Equal(t,
 				_selectAll("#pseudos a:first-of-type", nil)[0],

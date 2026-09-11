@@ -58,7 +58,7 @@ func CompilePseudoSelector(
 	}
 
 	if filterPseudo, ok := filters[name]; ok {
-		return filterPseudo(next, data, options, context), nil
+		return filterPseudo(next, data, options, context)
 	}
 
 	if pseudo, ok := pseudos[name]; ok {
