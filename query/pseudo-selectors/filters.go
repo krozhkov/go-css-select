@@ -269,8 +269,46 @@ var filters = map[string]Filter{
 			},
 		}, nil
 	},
-
-	// "hover" - not supported
-	// "visited" - not supported
-	// "active" - not supported
+	// not supported
+	"hover": func(
+		next *types.CompiledQuery,
+		rule string,
+		options *types.Options,
+		context []*dom.Node,
+	) (*types.CompiledQuery, error) {
+		return &types.CompiledQuery{
+			Match: func(elem *dom.Node) bool {
+				return false
+			},
+			Type: types.MatchTypeAlwaysFalse,
+		}, nil
+	},
+	// not supported
+	"visited": func(
+		next *types.CompiledQuery,
+		rule string,
+		options *types.Options,
+		context []*dom.Node,
+	) (*types.CompiledQuery, error) {
+		return &types.CompiledQuery{
+			Match: func(elem *dom.Node) bool {
+				return false
+			},
+			Type: types.MatchTypeAlwaysFalse,
+		}, nil
+	},
+	// not supported
+	"active": func(
+		next *types.CompiledQuery,
+		rule string,
+		options *types.Options,
+		context []*dom.Node,
+	) (*types.CompiledQuery, error) {
+		return &types.CompiledQuery{
+			Match: func(elem *dom.Node) bool {
+				return false
+			},
+			Type: types.MatchTypeAlwaysFalse,
+		}, nil
+	},
 }
