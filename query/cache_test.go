@@ -38,7 +38,8 @@ func TestCache(t *testing.T) {
 }
 
 func parseDocument(str string) *dom.Node {
-	return dom.ParseDocument(str, &parser.ParserOptions{LowerCaseAttributeNames: true, DecodeEntities: true, RecognizeSelfClosing: true})
+	d, _ := dom.ParseDocument(str, &parser.ParserOptions{LowerCaseAttributeNames: true, DecodeEntities: true, RecognizeSelfClosing: true})
+	return d
 }
 
 type MatcherMock struct {

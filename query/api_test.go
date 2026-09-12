@@ -13,7 +13,8 @@ import (
 )
 
 func parseDOM(str string, xmlMode bool) []*dom.Node {
-	return dom.ParseDOM(str, &parser.ParserOptions{XmlMode: xmlMode, LowerCaseAttributeNames: true, DecodeEntities: true, RecognizeSelfClosing: true})
+	d, _ := dom.ParseDOM(str, &parser.ParserOptions{XmlMode: xmlMode, LowerCaseAttributeNames: true, DecodeEntities: true, RecognizeSelfClosing: true})
+	return d
 }
 
 func TestApi(t *testing.T) {

@@ -13,10 +13,6 @@ import (
 	"github.com/krozhkov/go-htmlparser2/domutils"
 )
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 /*
  * All available rules
  */

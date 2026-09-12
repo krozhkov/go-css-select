@@ -157,3 +157,27 @@ func SelectOne(
 
 	return helpers.FindOne(query.Match, filteredElements, opts), nil
 }
+
+/**
+ * Tests whether or not an element is matched by query.
+ *
+ * @template Node The generic Node type for the DOM adapter being used.
+ * @template ElementNode The Node type for elements for the DOM adapter being used.
+ * @param elem The element to test if it matches the query.
+ * @param query can be either a CSS selector string or a compiled query function.
+ * @param [options] options for querying the document.
+ * @see compile for supported selector queries.
+ * @returns
+ */
+func Is(
+	elem *dom.Node,
+	query string,
+	options *types.Options,
+) (bool, error) {
+	compiled, err := Compile(query, options, nil)
+	if err != nil {
+		return false, err
+	}
+
+	return compiled(elem), nil
+}
