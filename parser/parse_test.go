@@ -1004,7 +1004,7 @@ func TestBrokenSelectors(t *testing.T) {
 	}
 }
 
-//go:embed __fixtures__/out.json
+//go:embed testdata/out.json
 var testData []byte
 
 func TestCollectedSelectors(t *testing.T) {

@@ -37,10 +37,6 @@ func hasDependsOnCurrentElement(selector [][]*parser.Selector) bool {
 	}) >= 0
 }
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 func copyOptions(
 	options *types.Options,
 ) *types.Options {
@@ -184,13 +180,15 @@ var subselects = map[string]Subselect{
 						}
 
 						context[0] = elem
-						childs := domutils.GetChildren(elem)
+						children := domutils.GetChildren(elem)
 
 						if compiled.ShouldTestNextSiblings {
-							childs = slices.Concat(childs, helpers.GetNextSiblings(elem))
+							nextSiblings := helpers.GetNextSiblings(elem)
+							children = slices.Grow(children, len(nextSiblings))
+							children = append(children, nextSiblings...)
 						}
 
-						return helpers.FindOne(compiled.Match, childs, options) != nil
+						return helpers.FindOne(compiled.Match, children, options) != nil
 					},
 				}, nil
 			} else {

@@ -87,7 +87,8 @@ func appendNextSiblings(
 	elemsLength := len(elems)
 	for i := 0; i < elemsLength; i++ {
 		nextSiblings := helpers.GetNextSiblings(elems[i])
-		elems = slices.Concat(elems, nextSiblings)
+		elems = slices.Grow(elems, len(nextSiblings))
+		elems = append(elems, nextSiblings...)
 	}
 	return elems
 }
@@ -119,7 +120,7 @@ func SelectAll(
 	)
 
 	if query.Type == types.MatchTypeAlwaysFalse || len(filteredElements) == 0 {
-		return nil, nil
+		return []*dom.Node{}, nil
 	}
 
 	return helpers.FindAll(query.Match, filteredElements, opts), nil

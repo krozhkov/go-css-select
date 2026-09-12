@@ -1,6 +1,7 @@
 package nthcheck
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -25,6 +26,10 @@ const NINE = '9'
 func Parse(formula string) (a int, b int, err error) {
 	formula = strings.ToLower(strings.TrimSpace(formula))
 
+	if len(formula) == 0 {
+		return 0, 0, errors.New("empty formula")
+	}
+
 	if formula == "even" {
 		return 2, 0, nil
 	}
@@ -46,7 +51,6 @@ func Parse(formula string) (a int, b int, err error) {
 		case '+':
 			{
 				index++
-				break
 			}
 		}
 

@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"math"
 	"slices"
 
 	"github.com/krozhkov/go-css-select/parser"
@@ -85,12 +84,12 @@ func GetQuality(token *parser.Selector) int {
 		}
 	case parser.SelectorTypeAttribute:
 		{
-			var ignoreCaseFactor = 1.0
+			var ignoreCaseFactor = 1
 			if token.IgnoreCase == parser.IgnoreCaseModeQuirksMode || token.IgnoreCase == parser.IgnoreCaseModeIgnoreCase {
 				// `ignoreCase` adds some overhead, half the result if applicable.
-				ignoreCaseFactor = 2.0
+				ignoreCaseFactor = 2
 			}
-			return int(math.Floor(float64(getAttributeQuality(token)) / ignoreCaseFactor))
+			return getAttributeQuality(token) / ignoreCaseFactor
 		}
 	case parser.SelectorTypePseudo:
 		{

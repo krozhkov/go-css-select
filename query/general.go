@@ -90,26 +90,19 @@ func CompileGeneralSelector(
 				}, nil
 			}
 
-			resultCache := helpers.NewCache[dom.Node, *bool]()
+			resultCache := helpers.NewCache[dom.Node, bool]()
 
 			return &types.CompiledQuery{
 				Match: func(elem *dom.Node) bool {
-					var result *bool
-
 					for current := helpers.GetElementParent(elem); current != nil; current = helpers.GetElementParent(current) {
-						cached := resultCache.Get(current)
+						if cached, ok := resultCache.Get(current); ok {
+							return cached
+						}
 
-						if cached == nil {
-							result = ptr(next.Match(current))
-							resultCache.Set(current, result)
-							if *result {
-								return true
-							}
-						} else {
-							if result != nil {
-								result = cached
-							}
-							return *cached
+						result := next.Match(current)
+						resultCache.Set(current, result)
+						if result {
+							return true
 						}
 					}
 

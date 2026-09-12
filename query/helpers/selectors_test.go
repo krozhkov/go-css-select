@@ -5,6 +5,7 @@ import (
 
 	"github.com/krozhkov/go-css-select/parser"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 /**
@@ -16,8 +17,9 @@ import (
  * @param selector Selector to sort
  * @returns Sorted selector, which might not be a valid selector anymore.
  */
-func parseSortStringify(selector string) string {
-	parsed, _ := parser.Parse(selector)
+func parseSortStringify(t *testing.T, selector string) string {
+	parsed, err := parser.Parse(selector)
+	require.Nil(t, err)
 
 	for _, token := range parsed {
 		SortRules(token)
@@ -28,17 +30,17 @@ func parseSortStringify(selector string) string {
 
 func TestSortRules(t *testing.T) {
 	t.Run("should move tag selectors last", func(t *testing.T) {
-		assert.Equal(t, ":empty[class]div", parseSortStringify("div[class]:empty"))
+		assert.Equal(t, ":empty[class]div", parseSortStringify(t, "div[class]:empty"))
 	})
 
 	t.Run("should move universal selectors last", func(t *testing.T) {
-		assert.Equal(t, "[class]*", parseSortStringify("*[class]"))
+		assert.Equal(t, "[class]*", parseSortStringify(t, "*[class]"))
 	})
 
 	t.Run("should sort attribute selectors", func(t *testing.T) {
 		assert.Equal(t,
 			`.foo#bar[foo="bar" i][foo^="bar"][foo$="bar"][foo!="bar"][foo!="bar" s][foo="bar"]`,
-			parseSortStringify(
+			parseSortStringify(t,
 				".foo#bar[foo=bar][foo^=bar][foo$=bar][foo!=bar][foo=bar i][foo!=bar s]",
 			),
 		)
@@ -47,7 +49,7 @@ func TestSortRules(t *testing.T) {
 	t.Run("should sort pseudo selectors", func(t *testing.T) {
 		assert.Equal(t,
 			":contains(a):icontains(a):has(div):is(foo bar):not(:empty):empty:is([foo]):is(div)",
-			parseSortStringify(
+			parseSortStringify(t,
 				":not(:empty):empty:contains(a):icontains(a):has(div):is(div):is(foo bar):is([foo])",
 			),
 		)
@@ -56,7 +58,7 @@ func TestSortRules(t *testing.T) {
 	t.Run("should support traversals", func(t *testing.T) {
 		assert.Equal(t,
 			`div > :empty[foo]* + [bar="foo" i]:is(div)`,
-			parseSortStringify("div > *:empty[foo] + [bar=foo i]:is(div)"),
+			parseSortStringify(t, "div > *:empty[foo] + [bar=foo i]:is(div)"),
 		)
 	})
 }

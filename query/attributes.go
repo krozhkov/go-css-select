@@ -141,6 +141,7 @@ var attributeRules = map[parser.AttributeAction]Attribute{
 				Match: func(elem *dom.Node) bool {
 					attr := domutils.GetAttributeValue(elem, name)
 					return attr != "" &&
+						len(attr) >= length &&
 						(len(attr) == length || attr[length] == '-') &&
 						strings.ToLower(attr[:length]) == value &&
 						next.Match(elem)
@@ -295,14 +296,14 @@ var attributeRules = map[parser.AttributeAction]Attribute{
 		}
 
 		if shouldIgnoreCase(selector, options) {
-			regex := regexp.MustCompile(fmt.Sprintf(`(?i)%s`, regexp.QuoteMeta(value)))
+			lValue := strings.ToLower(value)
 
 			return &types.CompiledQuery{
 				Match: func(elem *dom.Node) bool {
 					attr := domutils.GetAttributeValue(elem, name)
 					return attr != "" &&
 						len(attr) >= len(value) &&
-						regex.MatchString(attr) &&
+						strings.Contains(strings.ToLower(attr), lValue) &&
 						next.Match(elem)
 				},
 			}

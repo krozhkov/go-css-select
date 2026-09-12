@@ -2,6 +2,7 @@ package pseudoselectors
 
 import (
 	"regexp"
+	"slices"
 
 	"github.com/krozhkov/go-css-select/query/internal"
 	"github.com/krozhkov/go-css-select/query/types"
@@ -28,7 +29,7 @@ var pseudos = map[string]Pseudo{
 	"empty": func(elem *dom.Node, options *types.Options) bool {
 		children := domutils.GetChildren(elem)
 		// First, make sure the tag does not have any element children.
-		return internal.Every(children, dom.IsTag) &&
+		return !slices.ContainsFunc(children, dom.IsTag) &&
 			// Then, check that the text content is only whitespace.
 			internal.Every(children, func(elem *dom.Node) bool {
 				// FIXME: `getText` call is potentially expensive.

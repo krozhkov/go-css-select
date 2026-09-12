@@ -1,8 +1,6 @@
 package nthcheck
 
 import (
-	"math"
-
 	"github.com/krozhkov/go-css-select/query/types"
 )
 
@@ -184,7 +182,7 @@ func Generate(a int, b int) func() int {
 	}
 
 	if b < 0 {
-		b += a * int(math.Ceil(float64(-b)/float64(a)))
+		b += a * ((-b + a - 1) / a)
 	}
 
 	return func() int {

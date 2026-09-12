@@ -11,7 +11,7 @@ import (
 
 type Cache[K any, V any] struct {
 	store map[weak.Pointer[K]]V
-	mu    sync.Mutex
+	mu    sync.RWMutex
 }
 
 func NewCache[K any, V any]() *Cache[K, V] {
@@ -25,41 +25,32 @@ func (c *Cache[K, V]) Set(key *K, value V) {
 	defer c.mu.Unlock()
 
 	ptr := weak.Make(key)
-
+	_, exists := c.store[ptr]
 	c.store[ptr] = value
 
-	runtime.AddCleanup(key, func(p weak.Pointer[K]) {
-		c.mu.Lock()
-		delete(c.store, p)
-		c.mu.Unlock()
-	}, ptr)
+	if !exists {
+		runtime.AddCleanup(key, func(p weak.Pointer[K]) {
+			c.mu.Lock()
+			delete(c.store, p)
+			c.mu.Unlock()
+		}, ptr)
+	}
 }
 
-func (c *Cache[K, V]) Has(key *K) bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (c *Cache[K, V]) Get(key *K) (V, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	ptr := weak.Make(key)
 
-	_, ok := c.store[ptr]
+	value, ok := c.store[ptr]
 
-	return ok
-}
-
-func (c *Cache[K, V]) Get(key *K) V {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	ptr := weak.Make(key)
-
-	value, _ := c.store[ptr]
-
-	return value
+	return value, ok
 }
 
 func (c *Cache[K, V]) Len() int {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	return len(c.store)
 }
@@ -101,12 +92,14 @@ func CacheParentResults(
 			if !next.Match(elem) {
 				return false
 			}
-			if resultCache.Has(elem) {
-				return resultCache.Get(elem)
+			if cached, ok := resultCache.Get(elem); ok {
+				return cached
 			}
 
 			// Check all of the element's parents.
 			node := elem
+			var result bool
+			var found bool
 
 			for {
 				parent := GetElementParent(node)
@@ -117,12 +110,12 @@ func CacheParentResults(
 
 				node = parent
 
-				if resultCache.Has(node) {
+				if result, found = resultCache.Get(node); found {
 					break
 				}
 			}
 
-			return resultCache.Get(node) && addResultToCache(elem)
+			return result && addResultToCache(elem)
 		},
 	}
 }

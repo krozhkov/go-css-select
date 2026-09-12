@@ -170,7 +170,7 @@ func Parse(selector string) ([][]*Selector, error) {
 	}
 
 	if endIndex < len(selector) {
-		return nil, fmt.Errorf("Unmatched selector: %s", selector[endIndex:])
+		return nil, fmt.Errorf("unmatched selector: %s", selector[endIndex:])
 	}
 
 	return subselects, nil
@@ -187,7 +187,7 @@ func parseSelector(
 		match := reName.FindStringSubmatch(selector[selectorIndex+offset:])
 
 		if len(match) == 0 {
-			return "", fmt.Errorf("Expected name, found  %s", selector[selectorIndex:])
+			return "", fmt.Errorf("expected name, found  %s", selector[selectorIndex:])
 		}
 
 		name := match[0]
@@ -213,12 +213,10 @@ func parseSelector(
 				{
 					// Skip next character
 					selectorIndex += 1
-					break
 				}
 			case LeftParenthesis:
 				{
 					counter += 1
-					break
 				}
 			case RightParenthesis:
 				{
@@ -229,8 +227,6 @@ func parseSelector(
 						selectorIndex++
 						return value, nil
 					}
-
-					break
 				}
 			}
 		}
@@ -240,7 +236,7 @@ func parseSelector(
 
 	ensureNotTraversal := func() error {
 		if len(tokens) > 0 && IsTraversal(tokens[len(tokens)-1]) {
-			return errors.New("did not expect successive traversals.")
+			return errors.New("did not expect successive traversals")
 		}
 
 		return nil
@@ -325,7 +321,6 @@ loop:
 				}
 
 				stripWhitespace(1)
-				break
 			}
 		// Traversals
 		case GreaterThan:
@@ -335,7 +330,6 @@ loop:
 					return selectorIndex, err
 				}
 				stripWhitespace(1)
-				break
 			}
 		case LessThan:
 			{
@@ -344,7 +338,6 @@ loop:
 					return selectorIndex, err
 				}
 				stripWhitespace(1)
-				break
 			}
 		case Tilde:
 			{
@@ -353,7 +346,6 @@ loop:
 					return selectorIndex, err
 				}
 				stripWhitespace(1)
-				break
 			}
 		case Plus:
 			{
@@ -362,7 +354,6 @@ loop:
 					return selectorIndex, err
 				}
 				stripWhitespace(1)
-				break
 			}
 		// Special attribute selectors: .class, #id
 		case Period:
@@ -371,7 +362,6 @@ loop:
 				if err != nil {
 					return selectorIndex, err
 				}
-				break
 			}
 		case Hash:
 			{
@@ -379,7 +369,6 @@ loop:
 				if err != nil {
 					return selectorIndex, err
 				}
-				break
 			}
 		case LeftSquareBracket:
 			{
@@ -409,7 +398,7 @@ loop:
 						return selectorIndex, err
 					}
 
-					if selector[selectorIndex] == Pipe && selector[selectorIndex+1] != Equal {
+					if selectorIndex < len(selector) && selector[selectorIndex] == Pipe && selectorIndex+1 < len(selector) && selector[selectorIndex+1] != Equal {
 						namespace = String(name)
 						name, err = getName(1)
 						if err != nil {
@@ -488,13 +477,11 @@ loop:
 							{
 								ignoreCase = IgnoreCaseModeIgnoreCase
 								stripWhitespace(1)
-								break
 							}
 						case LowerS:
 							{
 								ignoreCase = IgnoreCaseModeCaseSensitive
 								stripWhitespace(1)
-								break
 							}
 						}
 					}
@@ -516,7 +503,6 @@ loop:
 				}
 
 				tokens = append(tokens, attributeSelector)
-				break
 			}
 		case Colon:
 			{
@@ -563,7 +549,7 @@ loop:
 				if selectorIndex < len(selector) && selector[selectorIndex] == LeftParenthesis {
 					if isUnpackPseudos(name) {
 						if selectorIndex+1 >= len(selector) || isQuote(selector[selectorIndex+1]) {
-							return selectorIndex, errors.New(`pseudo-selector ${name} cannot be quoted`)
+							return selectorIndex, fmt.Errorf("pseudo-selector %s cannot be quoted", name)
 						}
 
 						children = make([][]*Selector, 0)
@@ -578,7 +564,7 @@ loop:
 						}
 
 						if selectorIndex >= len(selector) || selector[selectorIndex] != RightParenthesis {
-							return selectorIndex, errors.New(`missing closing parenthesis in :${name} (${selector})`)
+							return selectorIndex, fmt.Errorf("missing closing parenthesis in :%s (%s)", name, selector)
 						}
 
 						selectorIndex += 1
@@ -606,7 +592,6 @@ loop:
 					Data:     value,
 					Children: children,
 				})
-				break
 			}
 		case Comma:
 			{
@@ -617,7 +602,6 @@ loop:
 
 				tokens = make([]*Selector, 0)
 				stripWhitespace(1)
-				break
 			}
 		default:
 			{
@@ -651,7 +635,7 @@ loop:
 				} else if firstChar == Pipe {
 					name = ""
 
-					if selector[selectorIndex+1] == Pipe {
+					if selectorIndex+1 < len(selector) && selector[selectorIndex+1] == Pipe {
 						err = addTraversal(SelectorTypeColumnCombinator)
 						if err != nil {
 							return selectorIndex, err
@@ -668,7 +652,7 @@ loop:
 					break loop
 				}
 
-				if selectorIndex < len(selector) && selector[selectorIndex] == Pipe && selector[selectorIndex+1] != Pipe {
+				if selectorIndex < len(selector) && selector[selectorIndex] == Pipe && selectorIndex+1 < len(selector) && selector[selectorIndex+1] != Pipe {
 					namespace = String(name)
 					if selector[selectorIndex+1] == Asterisk {
 						name = "*"

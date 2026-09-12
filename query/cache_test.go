@@ -23,14 +23,18 @@ func TestCache(t *testing.T) {
 	cache.Set(node, "data")
 
 	assert.Equal(t, 1, cache.Len())
-	assert.True(t, cache.Has(node))
-	assert.Equal(t, "data", cache.Get(node))
+	cached, ok := cache.Get(node)
+	assert.True(t, ok)
+	assert.Equal(t, "data", cached)
 
 	node = nil
 	runtime.GC()
 	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, 0, cache.Len())
+	assert.Eventually(t, func() bool {
+		runtime.GC()
+		return cache.Len() == 0
+	}, 2*time.Second, 20*time.Millisecond)
 }
 
 func parseDocument(str string) *dom.Node {

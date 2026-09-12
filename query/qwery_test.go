@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//go:embed __fixtures__/qwery.html
+//go:embed testdata/qwery.html
 var qwery string
 
 func clearNode(node *dom.Node) *dom.Node {

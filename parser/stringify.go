@@ -164,7 +164,9 @@ func stringifyToken(sb *strings.Builder, token *Selector, index int, array []*Se
 				token.IgnoreCase == IgnoreCaseModeQuirksMode &&
 				token.Namespace == nil {
 				sb.WriteRune('#')
-				escapeName(sb, *token.Data, charsToEscapeInName)
+				if token.Data != nil {
+					escapeName(sb, *token.Data, charsToEscapeInName)
+				}
 				return
 			}
 
@@ -173,7 +175,9 @@ func stringifyToken(sb *strings.Builder, token *Selector, index int, array []*Se
 				token.IgnoreCase == IgnoreCaseModeQuirksMode &&
 				token.Namespace == nil {
 				sb.WriteRune('.')
-				escapeName(sb, *token.Data, charsToEscapeInName)
+				if token.Data != nil {
+					escapeName(sb, *token.Data, charsToEscapeInName)
+				}
 				return
 			}
 
@@ -190,7 +194,9 @@ func stringifyToken(sb *strings.Builder, token *Selector, index int, array []*Se
 			getNamespacedName(sb, token)
 			sb.WriteString(getActionValue(token.Action))
 			sb.WriteString("=\"")
-			escapeName(sb, *token.Data, charsToEscapeInAttributeValue)
+			if token.Data != nil {
+				escapeName(sb, *token.Data, charsToEscapeInAttributeValue)
+			}
 			sb.WriteString("\"")
 
 			switch token.IgnoreCase {
