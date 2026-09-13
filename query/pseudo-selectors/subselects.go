@@ -38,38 +38,15 @@ func copyOptions(
 	options *types.Options,
 ) *types.Options {
 	if options == nil {
-		return nil
+		return &types.Options{}
 	}
 
-	var xmlMode = types.OptNo
-	if options.XmlMode == types.OptYes {
-		xmlMode = types.OptYes
-	}
-	var lowerCaseAttributeNames = types.OptNo
-	if options.LowerCaseAttributeNames == types.OptYes {
-		lowerCaseAttributeNames = types.OptYes
-	}
-	var lowerCaseTags = types.OptNo
-	if options.LowerCaseTags == types.OptYes {
-		lowerCaseTags = types.OptYes
-	}
-	var quirksMode = types.OptNo
-	if options.QuirksMode == types.OptYes {
-		quirksMode = types.OptYes
-	}
-	var cacheResults = types.OptNo
-	if options.CacheResults == types.OptYes {
-		cacheResults = types.OptYes
-	}
+	opts := *options
 	// Not copied: context, rootFunc
-	return &types.Options{
-		XmlMode:                 xmlMode,
-		LowerCaseAttributeNames: lowerCaseAttributeNames,
-		LowerCaseTags:           lowerCaseTags,
-		QuirksMode:              quirksMode,
-		CacheResults:            cacheResults,
-		Pseudos:                 options.Pseudos,
-	}
+	opts.Context = nil
+	opts.RootFunc = nil
+
+	return &opts
 }
 
 func is(
