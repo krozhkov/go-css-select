@@ -67,12 +67,12 @@ func (c *Cache[K, V]) Len() int {
 func CacheParentResults(
 	next *types.CompiledQuery,
 	options *types.Options,
-	matches func(elem *dom.Node) bool,
+	matches func(elem *dom.Node, scope *dom.Node) bool,
 ) *types.CompiledQuery {
 	if options != nil && options.CacheResults == types.OptNo {
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
-				return next.Match(elem) && matches(elem)
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
+				return next.Match(elem, scope) && matches(elem, scope)
 			},
 		}
 	}
@@ -80,16 +80,16 @@ func CacheParentResults(
 	// Use a cache to avoid re-checking children of an element.
 	resultCache := NewCache[dom.Node, bool]()
 
-	addResultToCache := func(elem *dom.Node) bool {
-		result := matches(elem)
+	addResultToCache := func(elem *dom.Node, scope *dom.Node) bool {
+		result := matches(elem, scope)
 
 		resultCache.Set(elem, result)
 		return result
 	}
 
 	return &types.CompiledQuery{
-		Match: func(elem *dom.Node) bool {
-			if !next.Match(elem) {
+		Match: func(elem *dom.Node, scope *dom.Node) bool {
+			if !next.Match(elem, scope) {
 				return false
 			}
 			if cached, ok := resultCache.Get(elem); ok {
@@ -105,7 +105,7 @@ func CacheParentResults(
 				parent := GetElementParent(node)
 
 				if parent == nil {
-					return addResultToCache(elem)
+					return addResultToCache(elem, scope)
 				}
 
 				node = parent
@@ -115,7 +115,7 @@ func CacheParentResults(
 				}
 			}
 
-			return result && addResultToCache(elem)
+			return result && addResultToCache(elem, scope)
 		},
 	}
 }

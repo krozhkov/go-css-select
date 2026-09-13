@@ -38,8 +38,8 @@ func CompilePseudoSelector(
 
 	if userPseudo, ok := userPseudos[name]; ok {
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
-				return userPseudo(elem, data) && next.Match(elem)
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
+				return userPseudo(elem, data) && next.Match(elem, scope)
 			},
 		}, nil
 	}
@@ -67,8 +67,8 @@ func CompilePseudoSelector(
 		}
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
-				return pseudo(elem, options) && next.Match(elem)
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
+				return pseudo(elem, options) && next.Match(elem, scope)
 			},
 		}, nil
 	}

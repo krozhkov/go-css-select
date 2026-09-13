@@ -19,8 +19,9 @@ import (
  * @returns All matching elements.
  */
 func FindAll(
-	query func(*dom.Node) bool,
+	query func(elem *dom.Node, scope *dom.Node) bool,
 	elems []*dom.Node,
+	scope *dom.Node,
 	options *types.Options,
 ) []*dom.Node {
 	var xmlMode bool
@@ -58,7 +59,7 @@ func FindAll(
 		if !dom.IsTag(elem) {
 			continue
 		}
-		if query(elem) {
+		if query(elem, scope) {
 			result = append(result, elem)
 		}
 
@@ -87,8 +88,9 @@ func FindAll(
  * @returns The first matching element, or null if there was no match.
  */
 func FindOne(
-	query func(*dom.Node) bool,
+	query func(elem *dom.Node, scope *dom.Node) bool,
 	elems []*dom.Node,
+	scope *dom.Node,
 	options *types.Options,
 ) *dom.Node {
 	var xmlMode bool
@@ -125,7 +127,7 @@ func FindOne(
 		if !dom.IsTag(elem) {
 			continue
 		}
-		if query(elem) {
+		if query(elem, scope) {
 			return elem
 		}
 

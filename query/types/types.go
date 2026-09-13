@@ -53,7 +53,7 @@ type Options struct {
 	 * The last function in the stack, will be called with the last element
 	 * that's looked at.
 	 */
-	RootFunc func(element *dom.Node) bool
+	RootFunc func(element *dom.Node, scope *dom.Node) bool
 	/**
 	 * The context of the current query. Used to limit the scope of searches.
 	 * Can be matched directly using the `:scope` pseudo-class.
@@ -92,7 +92,7 @@ const (
 )
 
 type CompiledQuery struct {
-	Match                  func(node *dom.Node) bool
+	Match                  func(node *dom.Node, scope *dom.Node) bool
 	ShouldTestNextSiblings bool
 	Type                   MatchType
 }

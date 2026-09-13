@@ -10,9 +10,6 @@ import (
 	"github.com/krozhkov/go-htmlparser2/domutils"
 )
 
-/** Used as a placeholder for :has. Will be replaced with the actual element. */
-var PLACEHOLDER_ELEMENT = &dom.Node{}
-
 type Subselect = func(
 	next *types.CompiledQuery,
 	subselect [][]*parser.Selector,
@@ -95,8 +92,8 @@ func is(
 	}
 
 	return &types.CompiledQuery{
-		Match: func(elem *dom.Node) bool {
-			return query.Match(elem) && next.Match(elem)
+		Match: func(elem *dom.Node, scope *dom.Node) bool {
+			return query.Match(elem, scope) && next.Match(elem, scope)
 		},
 	}, nil
 }
@@ -130,7 +127,7 @@ var subselects = map[string]Subselect{
 		}
 		if query.Type == types.MatchTypeAlwaysTrue {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					return false
 				},
 				Type: types.MatchTypeAlwaysFalse,
@@ -138,8 +135,8 @@ var subselects = map[string]Subselect{
 		}
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
-				return !query.Match(elem) && next.Match(elem)
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
+				return !query.Match(elem, scope) && next.Match(elem, scope)
 			},
 		}, nil
 	},
@@ -153,15 +150,7 @@ var subselects = map[string]Subselect{
 		opts := copyOptions(options)
 		opts.RelativeSelector = types.OptYes
 
-		var context []*dom.Node
-		if slices.IndexFunc(subselect, func(s []*parser.Selector) bool {
-			return slices.IndexFunc(s, helpers.IsTraversal) >= 0
-		}) >= 0 {
-			context = []*dom.Node{PLACEHOLDER_ELEMENT}
-		}
-		skipCache := hasDependsOnCurrentElement(subselect)
-
-		compiled, err := compileToken(subselect, opts, context)
+		compiled, err := compileToken(subselect, opts, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -170,48 +159,49 @@ var subselects = map[string]Subselect{
 			return compiled, nil
 		}
 
-		// If `compiled` is `trueFunc`, we can skip this.
-		if len(context) > 0 && compiled.Type != types.MatchTypeAlwaysTrue {
+		skipCache := hasDependsOnCurrentElement(subselect)
+
+		// If `compiled` is `trueFunc`, we can use this.
+		if compiled.Type == types.MatchTypeAlwaysTrue {
+			hasOne := func(elem *dom.Node, scope *dom.Node) bool {
+				return helpers.FindOne(compiled.Match, domutils.GetChildren(elem), scope, options) != nil
+			}
+
 			if skipCache {
 				return &types.CompiledQuery{
-					Match: func(elem *dom.Node) bool {
-						if !next.Match(elem) {
-							return false
-						}
-
-						context[0] = elem
-						children := domutils.GetChildren(elem)
-
-						if compiled.ShouldTestNextSiblings {
-							nextSiblings := helpers.GetNextSiblings(elem)
-							children = slices.Grow(children, len(nextSiblings))
-							children = append(children, nextSiblings...)
-						}
-
-						return helpers.FindOne(compiled.Match, children, options) != nil
+					Match: func(elem *dom.Node, scope *dom.Node) bool {
+						return next.Match(elem, scope) && hasOne(elem, scope)
 					},
 				}, nil
 			} else {
-				return helpers.CacheParentResults(next, options, func(elem *dom.Node) bool {
-					context[0] = elem
-
-					return helpers.FindOne(compiled.Match, domutils.GetChildren(elem), options) != nil
-				}), nil
+				return helpers.CacheParentResults(next, options, hasOne), nil
 			}
 		}
 
-		hasOne := func(elem *dom.Node) bool {
-			return helpers.FindOne(compiled.Match, domutils.GetChildren(elem), options) != nil
+		hasMatch := func(elem *dom.Node, scope *dom.Node) bool {
+			children := domutils.GetChildren(elem)
+
+			if compiled.ShouldTestNextSiblings {
+				nextSiblings := helpers.GetNextSiblings(elem)
+				children = slices.Grow(children, len(nextSiblings))
+				children = append(children, nextSiblings...)
+			}
+
+			matchForScope := func(node *dom.Node, _ *dom.Node) bool {
+				return compiled.Match(node, elem) // pass "elem" as a new scope
+			}
+
+			return helpers.FindOne(matchForScope, children, scope, options) != nil
 		}
 
 		if skipCache {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
-					return next.Match(elem) && hasOne(elem)
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
+					return next.Match(elem, scope) && hasMatch(elem, scope)
 				},
 			}, nil
-		} else {
-			return helpers.CacheParentResults(next, options, hasOne), nil
 		}
+
+		return helpers.CacheParentResults(next, options, hasMatch), nil
 	},
 }

@@ -110,19 +110,19 @@ var attributeRules = map[parser.AttributeAction]Attribute{
 			value = strings.ToLower(value)
 
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					attr := domutils.GetAttributeValue(elem, name)
 					return attr != "" &&
 						len(attr) == len(value) &&
 						strings.ToLower(attr) == value &&
-						next.Match(elem)
+						next.Match(elem, scope)
 				},
 			}
 		}
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
-				return domutils.GetAttributeValue(elem, name) == value && next.Match(elem)
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
+				return domutils.GetAttributeValue(elem, name) == value && next.Match(elem, scope)
 			},
 		}
 	},
@@ -138,25 +138,25 @@ var attributeRules = map[parser.AttributeAction]Attribute{
 			value = strings.ToLower(value)
 
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					attr := domutils.GetAttributeValue(elem, name)
 					return attr != "" &&
 						len(attr) >= length &&
 						(len(attr) == length || attr[length] == '-') &&
 						strings.ToLower(attr[:length]) == value &&
-						next.Match(elem)
+						next.Match(elem, scope)
 				},
 			}
 		}
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
 				attr := domutils.GetAttributeValue(elem, name)
 				return attr != "" &&
 					len(attr) >= length &&
 					(len(attr) == length || attr[length] == '-') &&
 					attr[:length] == value &&
-					next.Match(elem)
+					next.Match(elem, scope)
 			},
 		}
 	},
@@ -168,7 +168,7 @@ var attributeRules = map[parser.AttributeAction]Attribute{
 		}
 		if spaceRe.MatchString(value) {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					return false
 				},
 				Type: types.MatchTypeAlwaysFalse,
@@ -183,19 +183,19 @@ var attributeRules = map[parser.AttributeAction]Attribute{
 		regex := regexp.MustCompile(fmt.Sprintf(`%s(?:^|\s)%s(?:$|\s)`, flags, regexp.QuoteMeta(value)))
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
 				attr := domutils.GetAttributeValue(elem, name)
 				return attr != "" &&
 					len(attr) >= len(value) &&
 					regex.MatchString(attr) &&
-					next.Match(elem)
+					next.Match(elem, scope)
 			},
 		}
 	},
 	"exists": func(next *types.CompiledQuery, selector *parser.Selector, options *types.Options) *types.CompiledQuery {
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
-				return domutils.HasAttrib(elem, selector.Name) && next.Match(elem)
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
+				return domutils.HasAttrib(elem, selector.Name) && next.Match(elem, scope)
 			},
 		}
 	},
@@ -209,7 +209,7 @@ var attributeRules = map[parser.AttributeAction]Attribute{
 
 		if length == 0 {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					return false
 				},
 				Type: types.MatchTypeAlwaysFalse,
@@ -220,22 +220,22 @@ var attributeRules = map[parser.AttributeAction]Attribute{
 			value = strings.ToLower(value)
 
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					attr := domutils.GetAttributeValue(elem, name)
 					return attr != "" &&
 						len(attr) >= length &&
 						strings.ToLower(attr[:length]) == value &&
-						next.Match(elem)
+						next.Match(elem, scope)
 				},
 			}
 		}
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
 				attr := domutils.GetAttributeValue(elem, name)
 				return attr != "" &&
 					strings.HasPrefix(attr, value) &&
-					next.Match(elem)
+					next.Match(elem, scope)
 			},
 		}
 	},
@@ -249,7 +249,7 @@ var attributeRules = map[parser.AttributeAction]Attribute{
 
 		if length == 0 {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					return false
 				},
 				Type: types.MatchTypeAlwaysFalse,
@@ -260,22 +260,22 @@ var attributeRules = map[parser.AttributeAction]Attribute{
 			value = strings.ToLower(value)
 
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					attr := domutils.GetAttributeValue(elem, name)
 					return attr != "" &&
 						len(attr) >= length &&
 						strings.ToLower(attr[len(attr)-length:]) == value &&
-						next.Match(elem)
+						next.Match(elem, scope)
 				},
 			}
 		}
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
 				attr := domutils.GetAttributeValue(elem, name)
 				return attr != "" &&
 					strings.HasSuffix(attr, value) &&
-					next.Match(elem)
+					next.Match(elem, scope)
 			},
 		}
 	},
@@ -288,7 +288,7 @@ var attributeRules = map[parser.AttributeAction]Attribute{
 
 		if value == "" {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					return false
 				},
 				Type: types.MatchTypeAlwaysFalse,
@@ -299,22 +299,22 @@ var attributeRules = map[parser.AttributeAction]Attribute{
 			lValue := strings.ToLower(value)
 
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					attr := domutils.GetAttributeValue(elem, name)
 					return attr != "" &&
 						len(attr) >= len(value) &&
 						strings.Contains(strings.ToLower(attr), lValue) &&
-						next.Match(elem)
+						next.Match(elem, scope)
 				},
 			}
 		}
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
 				attr := domutils.GetAttributeValue(elem, name)
 				return attr != "" &&
 					strings.Contains(attr, value) &&
-					next.Match(elem)
+					next.Match(elem, scope)
 			},
 		}
 	},
@@ -327,9 +327,9 @@ var attributeRules = map[parser.AttributeAction]Attribute{
 
 		if value == "" {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					attr := domutils.GetAttributeValue(elem, name)
-					return attr != "" && next.Match(elem)
+					return attr != "" && next.Match(elem, scope)
 				},
 			}
 		}
@@ -338,18 +338,18 @@ var attributeRules = map[parser.AttributeAction]Attribute{
 			value = strings.ToLower(value)
 
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					attr := domutils.GetAttributeValue(elem, name)
 					return (attr == "" || len(attr) != len(value) || strings.ToLower(attr) != value) &&
-						next.Match(elem)
+						next.Match(elem, scope)
 				},
 			}
 		}
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
 				attr := domutils.GetAttributeValue(elem, name)
-				return (attr == "" || attr != value) && next.Match(elem)
+				return (attr == "" || attr != value) && next.Match(elem, scope)
 			},
 		}
 	},

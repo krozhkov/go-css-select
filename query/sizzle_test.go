@@ -357,4 +357,20 @@ func TestSizzle(t *testing.T) {
 			[]string{}, document,
 		)
 	})
+
+	t.Run("regression - has", func(t *testing.T) {
+		html := `<div id="outer">
+			<section id="target">
+				<p id="inner"></p>
+			</section>
+		</div>`
+
+		doc, err := dom.ParseDocument(html, &parser.ParserOptions{LowerCaseAttributeNames: true, DecodeEntities: true, RecognizeSelfClosing: true})
+		require.NoError(t, err)
+
+		matches, err := SelectAll("section:has(div p)", doc.Children, nil)
+		require.NoError(t, err)
+
+		assert.Len(t, matches, 0)
+	})
 }

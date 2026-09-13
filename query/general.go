@@ -64,8 +64,8 @@ func CompileGeneralSelector(
 			}
 
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
-					return domutils.GetName(elem) == name && next.Match(elem)
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
+					return domutils.GetName(elem) == name && next.Match(elem, scope)
 				},
 			}, nil
 		}
@@ -74,9 +74,9 @@ func CompileGeneralSelector(
 		{
 			if !hasExpensiveSubselector || options.CacheResults == types.OptNo {
 				return &types.CompiledQuery{
-					Match: func(elem *dom.Node) bool {
+					Match: func(elem *dom.Node, scope *dom.Node) bool {
 						for current := helpers.GetElementParent(elem); current != nil; current = helpers.GetElementParent(current) {
-							if next.Match(current) {
+							if next.Match(current, scope) {
 								return true
 							}
 						}
@@ -89,13 +89,13 @@ func CompileGeneralSelector(
 			resultCache := helpers.NewCache[dom.Node, bool]()
 
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					for current := helpers.GetElementParent(elem); current != nil; current = helpers.GetElementParent(current) {
 						if cached, ok := resultCache.Get(current); ok {
 							return cached
 						}
 
-						result := next.Match(current)
+						result := next.Match(current, scope)
 						resultCache.Set(current, result)
 						if result {
 							return true
@@ -110,11 +110,11 @@ func CompileGeneralSelector(
 		{
 			// Include element itself, only used while querying an array
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					current := elem
 
 					for {
-						if next.Match(current) {
+						if next.Match(current, scope) {
 							return true
 						}
 						current = helpers.GetElementParent(current)
@@ -130,10 +130,10 @@ func CompileGeneralSelector(
 	case parser.SelectorTypeParent:
 		{
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					children := domutils.GetChildren(elem)
 					return slices.IndexFunc(children, func(n *dom.Node) bool {
-						return dom.IsTag(n) && next.Match(n)
+						return dom.IsTag(n) && next.Match(n, scope)
 					}) >= 0
 				},
 			}, nil
@@ -141,16 +141,16 @@ func CompileGeneralSelector(
 	case parser.SelectorTypeChild:
 		{
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					parent := helpers.GetElementParent(elem)
-					return parent != nil && next.Match(parent)
+					return parent != nil && next.Match(parent, scope)
 				},
 			}, nil
 		}
 	case parser.SelectorTypeSibling:
 		{
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					siblings := domutils.GetSiblings(elem)
 
 					for i := 0; i < len(siblings); i++ {
@@ -158,7 +158,7 @@ func CompileGeneralSelector(
 						if elem == currentSibling {
 							break
 						}
-						if dom.IsTag(currentSibling) && next.Match(currentSibling) {
+						if dom.IsTag(currentSibling) && next.Match(currentSibling, scope) {
 							return true
 						}
 					}
@@ -170,9 +170,9 @@ func CompileGeneralSelector(
 	case parser.SelectorTypeAdjacent:
 		{
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					previous := domutils.PrevElementSibling(elem)
-					return previous != nil && next.Match(previous)
+					return previous != nil && next.Match(previous, scope)
 				},
 			}, nil
 		}
@@ -186,7 +186,7 @@ func CompileGeneralSelector(
 		}
 	default:
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
 				return false
 			},
 		}, nil

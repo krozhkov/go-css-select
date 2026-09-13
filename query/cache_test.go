@@ -44,16 +44,16 @@ func parseDocument(str string) *dom.Node {
 
 type MatcherMock struct {
 	mock.Mock
-	match func(elem *dom.Node) bool
+	match func(elem *dom.Node, scope *dom.Node) bool
 }
 
-func (m *MatcherMock) Match(elem *dom.Node) bool {
-	m.Called(elem)
-	return m.match(elem)
+func (m *MatcherMock) Match(elem *dom.Node, scope *dom.Node) bool {
+	m.Called(elem, scope)
+	return m.match(elem, scope)
 }
-func NewMatcherMock(match func(elem *dom.Node) bool) *MatcherMock {
+func NewMatcherMock(match func(elem *dom.Node, scope *dom.Node) bool) *MatcherMock {
 	m := &MatcherMock{match: match}
-	m.On("Match", mock.Anything).Return()
+	m.On("Match", mock.Anything, mock.Anything).Return()
 	return m
 }
 
@@ -63,7 +63,7 @@ func TestCacheParentResults(t *testing.T) {
 			"<a><b><c><d><e>bar</e></d></c><f><g>bar</g></f></b></a>",
 		)
 
-		matcher := NewMatcherMock(func(elem *dom.Node) bool {
+		matcher := NewMatcherMock(func(elem *dom.Node, scope *dom.Node) bool {
 			text := domutils.GetText(elem)
 			return strings.Contains(text, "foo")
 		})
@@ -71,7 +71,7 @@ func TestCacheParentResults(t *testing.T) {
 
 		hasfoo := helpers.CacheParentResults(
 			&types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					return true
 				},
 			},
@@ -82,7 +82,7 @@ func TestCacheParentResults(t *testing.T) {
 		options := &types.Options{
 			Pseudos: map[string]func(elem *dom.Node, value string) bool{
 				"hasfoo": func(elem *dom.Node, _ string) bool {
-					return hasfoo.Match(elem)
+					return hasfoo.Match(elem, nil)
 				},
 			},
 		}
@@ -101,7 +101,7 @@ func TestCacheParentResults(t *testing.T) {
 			"<a><b><c><d><e>foo</e></d></c><f><g>bar</g></f></b></a>",
 		)
 
-		matcher := NewMatcherMock(func(elem *dom.Node) bool {
+		matcher := NewMatcherMock(func(elem *dom.Node, scope *dom.Node) bool {
 			text := domutils.GetText(elem)
 			return strings.Contains(text, "foo")
 		})
@@ -109,7 +109,7 @@ func TestCacheParentResults(t *testing.T) {
 
 		hasfoo := helpers.CacheParentResults(
 			&types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					return true
 				},
 			},
@@ -120,7 +120,7 @@ func TestCacheParentResults(t *testing.T) {
 		options := &types.Options{
 			Pseudos: map[string]func(elem *dom.Node, value string) bool{
 				"hasfoo": func(elem *dom.Node, _ string) bool {
-					return hasfoo.Match(elem)
+					return hasfoo.Match(elem, nil)
 				},
 			},
 		}
@@ -139,7 +139,7 @@ func TestCacheParentResults(t *testing.T) {
 			"<a><b><c><d><e>foo</e></d></c><f><g>bar</g></f></b></a>",
 		)
 
-		matcher := NewMatcherMock(func(elem *dom.Node) bool {
+		matcher := NewMatcherMock(func(elem *dom.Node, scope *dom.Node) bool {
 			text := domutils.GetText(elem)
 			return strings.Contains(text, "foo")
 		})
@@ -147,7 +147,7 @@ func TestCacheParentResults(t *testing.T) {
 
 		hasfoo := helpers.CacheParentResults(
 			&types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					return true
 				},
 			},
@@ -158,7 +158,7 @@ func TestCacheParentResults(t *testing.T) {
 		options := &types.Options{
 			Pseudos: map[string]func(elem *dom.Node, value string) bool{
 				"hasfoo": func(elem *dom.Node, _ string) bool {
-					return hasfoo.Match(elem)
+					return hasfoo.Match(elem, nil)
 				},
 			},
 		}

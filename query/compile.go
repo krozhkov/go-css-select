@@ -7,7 +7,6 @@ import (
 	"github.com/krozhkov/go-css-select/parser"
 	"github.com/krozhkov/go-css-select/query/helpers"
 	"github.com/krozhkov/go-css-select/query/internal"
-	pseudoselectors "github.com/krozhkov/go-css-select/query/pseudo-selectors"
 	"github.com/krozhkov/go-css-select/query/types"
 	"github.com/krozhkov/go-htmlparser2/dom"
 )
@@ -28,11 +27,12 @@ var SCOPE_TOKEN = &parser.Selector{
 func absolutize(
 	token [][]*parser.Selector,
 	context []*dom.Node,
+	isRelative bool,
 ) {
 	// TODO Use better check if the context is a document
-	hasContext := context != nil && internal.Every(context, func(e *dom.Node) bool {
-		return e == pseudoselectors.PLACEHOLDER_ELEMENT || (dom.IsTag(e) && helpers.GetElementParent(e) != nil)
-	})
+	hasContext := isRelative || (context != nil && internal.Every(context, func(e *dom.Node) bool {
+		return dom.IsTag(e) && helpers.GetElementParent(e) != nil
+	}))
 
 	for index, t := range token {
 		if len(t) > 0 && helpers.IsTraversal(t[0]) && t[0].Type != parser.SelectorTypeDescendant {
@@ -50,8 +50,8 @@ func absolutize(
 
 func or(a *types.CompiledQuery, b *types.CompiledQuery) *types.CompiledQuery {
 	return &types.CompiledQuery{
-		Match: func(node *dom.Node) bool {
-			return a.Match(node) || b.Match(node)
+		Match: func(node *dom.Node, scope *dom.Node) bool {
+			return a.Match(node, scope) || b.Match(node, scope)
 		},
 	}
 }
@@ -70,7 +70,7 @@ func compileToken(
 		finalContext = options.Context
 	}
 	rootFunc := &types.CompiledQuery{
-		Match: func(element *dom.Node) bool {
+		Match: func(element *dom.Node, scope *dom.Node) bool {
 			return true
 		},
 		Type: types.MatchTypeAlwaysTrue,
@@ -82,14 +82,14 @@ func compileToken(
 
 	// Check if the selector is relative
 	if options == nil || options.RelativeSelector != types.OptNo {
-		absolutize(token, finalContext)
+		absolutize(token, finalContext, options != nil && options.RelativeSelector == types.OptYes)
 	} else if slices.IndexFunc(token, func(t []*parser.Selector) bool { return len(t) > 0 && helpers.IsTraversal(t[0]) }) >= 0 {
 		return nil, errors.New("relative selectors are not allowed when the `relativeSelector` option is disabled")
 	}
 
 	shouldTestNextSiblings := false
 	query := &types.CompiledQuery{
-		Match: func(elem *dom.Node) bool {
+		Match: func(elem *dom.Node, scope *dom.Node) bool {
 			return false
 		},
 		Type: types.MatchTypeAlwaysFalse,

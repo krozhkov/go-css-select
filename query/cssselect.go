@@ -42,11 +42,13 @@ func Compile(
 	}
 
 	if next.Type == types.MatchTypeAlwaysFalse {
-		return next.Match, nil
+		return func(elem *dom.Node) bool {
+			return next.Match(elem, nil)
+		}, nil
 	}
 
 	return func(elem *dom.Node) bool {
-		return dom.IsTag(elem) && next.Match(elem)
+		return dom.IsTag(elem) && next.Match(elem, nil)
 	}, nil
 }
 
@@ -123,7 +125,7 @@ func SelectAll(
 		return []*dom.Node{}, nil
 	}
 
-	return helpers.FindAll(query.Match, filteredElements, opts), nil
+	return helpers.FindAll(query.Match, filteredElements, nil, opts), nil
 }
 
 /**
@@ -155,7 +157,7 @@ func SelectOne(
 		return nil, nil
 	}
 
-	return helpers.FindOne(query.Match, filteredElements, opts), nil
+	return helpers.FindOne(query.Match, filteredElements, nil, opts), nil
 }
 
 /**

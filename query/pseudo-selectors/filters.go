@@ -25,7 +25,7 @@ var filters = map[string]Filter{
 		options *types.Options,
 		context []*dom.Node,
 	) (*types.CompiledQuery, error) {
-		return helpers.CacheParentResults(next, options, func(elem *dom.Node) bool {
+		return helpers.CacheParentResults(next, options, func(elem *dom.Node, scope *dom.Node) bool {
 			return strings.Contains(domutils.GetText(elem), text)
 		}), nil
 	},
@@ -37,7 +37,7 @@ var filters = map[string]Filter{
 	) (*types.CompiledQuery, error) {
 		itext := strings.ToLower(text)
 
-		return helpers.CacheParentResults(next, options, func(elem *dom.Node) bool {
+		return helpers.CacheParentResults(next, options, func(elem *dom.Node, scope *dom.Node) bool {
 			return strings.Contains(strings.ToLower(domutils.GetText(elem)), itext)
 		}), nil
 	},
@@ -55,7 +55,7 @@ var filters = map[string]Filter{
 
 		if check.Type == types.MatchTypeAlwaysFalse {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					return false
 				},
 				Type: types.MatchTypeAlwaysFalse,
@@ -63,14 +63,14 @@ var filters = map[string]Filter{
 		}
 		if check.Type == types.MatchTypeAlwaysTrue {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
-					return helpers.GetElementParent(elem) != nil && next.Match(elem)
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
+					return helpers.GetElementParent(elem) != nil && next.Match(elem, scope)
 				},
 			}, nil
 		}
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
 				siblings := domutils.GetSiblings(elem)
 				pos := 0
 
@@ -83,7 +83,7 @@ var filters = map[string]Filter{
 					}
 				}
 
-				return check.Fn(pos) && next.Match(elem)
+				return check.Fn(pos) && next.Match(elem, scope)
 			},
 		}, nil
 	},
@@ -100,7 +100,7 @@ var filters = map[string]Filter{
 
 		if check.Type == types.MatchTypeAlwaysFalse {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					return false
 				},
 				Type: types.MatchTypeAlwaysFalse,
@@ -108,14 +108,14 @@ var filters = map[string]Filter{
 		}
 		if check.Type == types.MatchTypeAlwaysTrue {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
-					return helpers.GetElementParent(elem) != nil && next.Match(elem)
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
+					return helpers.GetElementParent(elem) != nil && next.Match(elem, scope)
 				},
 			}, nil
 		}
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
 				siblings := domutils.GetSiblings(elem)
 				pos := 0
 
@@ -128,7 +128,7 @@ var filters = map[string]Filter{
 					}
 				}
 
-				return check.Fn(pos) && next.Match(elem)
+				return check.Fn(pos) && next.Match(elem, scope)
 			},
 		}, nil
 	},
@@ -145,7 +145,7 @@ var filters = map[string]Filter{
 
 		if check.Type == types.MatchTypeAlwaysFalse {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					return false
 				},
 				Type: types.MatchTypeAlwaysFalse,
@@ -153,14 +153,14 @@ var filters = map[string]Filter{
 		}
 		if check.Type == types.MatchTypeAlwaysTrue {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
-					return helpers.GetElementParent(elem) != nil && next.Match(elem)
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
+					return helpers.GetElementParent(elem) != nil && next.Match(elem, scope)
 				},
 			}, nil
 		}
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
 				siblings := domutils.GetSiblings(elem)
 				pos := 0
 
@@ -174,7 +174,7 @@ var filters = map[string]Filter{
 					}
 				}
 
-				return check.Fn(pos) && next.Match(elem)
+				return check.Fn(pos) && next.Match(elem, scope)
 			},
 		}, nil
 	},
@@ -191,7 +191,7 @@ var filters = map[string]Filter{
 
 		if check.Type == types.MatchTypeAlwaysFalse {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
 					return false
 				},
 				Type: types.MatchTypeAlwaysFalse,
@@ -199,14 +199,14 @@ var filters = map[string]Filter{
 		}
 		if check.Type == types.MatchTypeAlwaysTrue {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
-					return helpers.GetElementParent(elem) != nil && next.Match(elem)
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
+					return helpers.GetElementParent(elem) != nil && next.Match(elem, scope)
 				},
 			}, nil
 		}
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
 				siblings := domutils.GetSiblings(elem)
 				pos := 0
 
@@ -220,7 +220,7 @@ var filters = map[string]Filter{
 					}
 				}
 
-				return check.Fn(pos) && next.Match(elem)
+				return check.Fn(pos) && next.Match(elem, scope)
 			},
 		}, nil
 	},
@@ -233,8 +233,8 @@ var filters = map[string]Filter{
 		context []*dom.Node,
 	) (*types.CompiledQuery, error) {
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
-				return helpers.GetElementParent(elem) == nil && next.Match(elem)
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
+				return helpers.GetElementParent(elem) == nil && next.Match(elem, scope)
 			},
 		}, nil
 	},
@@ -245,27 +245,22 @@ var filters = map[string]Filter{
 		options *types.Options,
 		context []*dom.Node,
 	) (*types.CompiledQuery, error) {
-		if len(context) == 0 {
-			// Equivalent to :root
+		if len(context) > 0 {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
-					return helpers.GetElementParent(elem) == nil && next.Match(elem)
-				},
-			}, nil
-		}
-
-		if len(context) == 1 {
-			// NOTE: can't be unpacked, as :has uses this for side-effects
-			return &types.CompiledQuery{
-				Match: func(elem *dom.Node) bool {
-					return context[0] == elem && next.Match(elem)
+				Match: func(elem *dom.Node, scope *dom.Node) bool {
+					return slices.Index(context, elem) >= 0 && next.Match(elem, scope)
 				},
 			}, nil
 		}
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
-				return slices.Index(context, elem) >= 0 && next.Match(elem)
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
+				if scope != nil {
+					return scope == elem && next.Match(elem, scope)
+				}
+
+				// Equivalent to :root
+				return helpers.GetElementParent(elem) == nil && next.Match(elem, scope)
 			},
 		}, nil
 	},
@@ -277,7 +272,7 @@ var filters = map[string]Filter{
 		context []*dom.Node,
 	) (*types.CompiledQuery, error) {
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
 				return false
 			},
 			Type: types.MatchTypeAlwaysFalse,
@@ -291,7 +286,7 @@ var filters = map[string]Filter{
 		context []*dom.Node,
 	) (*types.CompiledQuery, error) {
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
 				return false
 			},
 			Type: types.MatchTypeAlwaysFalse,
@@ -305,7 +300,7 @@ var filters = map[string]Filter{
 		context []*dom.Node,
 	) (*types.CompiledQuery, error) {
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node) bool {
+			Match: func(elem *dom.Node, scope *dom.Node) bool {
 				return false
 			},
 			Type: types.MatchTypeAlwaysFalse,

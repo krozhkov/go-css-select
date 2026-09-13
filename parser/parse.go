@@ -187,7 +187,7 @@ func parseSelector(
 		match := reName.FindStringSubmatch(selector[selectorIndex+offset:])
 
 		if len(match) == 0 {
-			return "", fmt.Errorf("expected name, found  %s", selector[selectorIndex:])
+			return "", fmt.Errorf("expected name, found %s", selector[selectorIndex:])
 		}
 
 		name := match[0]
