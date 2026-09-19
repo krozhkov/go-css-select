@@ -30,10 +30,10 @@ func TestSizzle(t *testing.T) {
 		return document.Children
 	}
 
-	createWithFriesXML := func() []*dom.Node {
+	createWithFriesXML := func() *dom.Node {
 		document, err := dom.ParseDocument(fries, &parser.ParserOptions{XmlMode: true})
 		require.NoError(t, err)
-		return document.Children
+		return document
 	}
 
 	test := func(t *testing.T, selector string, expectedIds []string, context []*dom.Node) {
@@ -48,8 +48,8 @@ func TestSizzle(t *testing.T) {
 		assert.Equal(t, actualIds, expectedIds)
 	}
 
-	testR := func(t *testing.T, selector string, expectedIds []string, context []*dom.Node) {
-		actual, err := SelectAll(selector, context, &types.Options{RelativeSelector: types.OptYes})
+	testOne := func(t *testing.T, selector string, expectedIds []string, context *dom.Node) {
+		actual, err := SelectAll(selector, context, nil)
 		require.NoError(t, err)
 
 		actualIds := internal.MapFunc(actual, func(e *dom.Node) string {
@@ -68,7 +68,7 @@ func TestSizzle(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, nodes, 0)
 		// Text element as context fails silently
-		nodes, err = SelectAll("div", []*dom.Node{dom.NewText("")}, nil)
+		nodes, err = SelectAll("div", dom.NewText(""), nil)
 		require.NoError(t, err)
 		assert.Len(t, nodes, 0)
 		form := domutils.GetElementById("form", document, true)
@@ -127,15 +127,15 @@ func TestSizzle(t *testing.T) {
 		test(t, "dl\tol", []string{"empty", "listWithTabIndex"}, document)
 		obj1 := domutils.GetElementById("object1", document, true)
 		// Object/param as context
-		nodes, err = SelectAll("param", []*dom.Node{obj1}, nil)
+		nodes, err = SelectAll("param", obj1, nil)
 		require.NoError(t, err)
 		assert.Len(t, nodes, 2)
 
 		// Finding selects with a context.
-		test(t,
+		testOne(t,
 			"select",
 			[]string{"select1", "select2", "select3", "select4", "select5"},
-			[]*dom.Node{form},
+			form,
 		)
 
 		/*
@@ -169,21 +169,21 @@ func TestSizzle(t *testing.T) {
 		}, document)
 
 		// Test Conflict ID
-		lengthtest := []*dom.Node{domutils.GetElementById("lengthtest", document, true)}
+		lengthtest := domutils.GetElementById("lengthtest", document, true)
 		// Finding element with id of ID.
-		test(t, "#idTest", []string{"idTest"}, lengthtest)
+		testOne(t, "#idTest", []string{"idTest"}, lengthtest)
 		// Finding element with id of ID.
-		test(t, "[name='id']", []string{"idTest"}, lengthtest)
+		testOne(t, "[name='id']", []string{"idTest"}, lengthtest)
 		// Finding elements with id of ID.
-		test(t, "input[id='idTest']", []string{"idTest"}, lengthtest)
+		testOne(t, "input[id='idTest']", []string{"idTest"}, lengthtest)
 
-		siblingTest := domutils.GetElementById("siblingTest", document, true).Children
+		siblingTest := domutils.GetElementById("siblingTest", document, true)
 		// Element-rooted QSA does not select based on document context
-		testR(t, "div em", []string{}, siblingTest)
+		testOne(t, "div em", []string{}, siblingTest)
 		// Element-rooted QSA does not select based on document context
-		testR(t, "div em, div em, div em:not(div em)", []string{}, siblingTest)
+		testOne(t, "div em, div em, div em:not(div em)", []string{}, siblingTest)
 		// Escaped commas do not get treated with an id in element-rooted QSA
-		testR(t, "div em, em\\,", []string{}, siblingTest)
+		testOne(t, "div em, em\\,", []string{}, siblingTest)
 
 		iframe := domutils.GetElementById("iframe", document, true)
 		iframe.Children = parseDOM("<body><p id='foo'>bar</p></body>", false)
@@ -191,7 +191,7 @@ func TestSizzle(t *testing.T) {
 			e.Parent = iframe
 		}
 		// Other document as context
-		nodes, err = SelectAll("p:contains(bar)", iframe.Children, nil)
+		nodes, err = SelectAll("p:contains(bar)", iframe, nil)
 		require.NoError(t, err)
 		assert.Equal(t, nodes, []*dom.Node{domutils.GetElementById("foo", iframe.Children, true)})
 		iframe.Children = []*dom.Node{}
@@ -264,7 +264,7 @@ func TestSizzle(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, nodes, 2)
 		// Check for namespaced element
-		filtered = internal.FilterFunc(xml, func(n *dom.Node) bool { return n.Type == "tag" })
+		filtered = internal.FilterFunc(xml.Children, func(n *dom.Node) bool { return n.Type == "tag" })
 		last := filtered[len(filtered)-1]
 		result, err := Is(last, "soap\\:Envelope", &types.Options{XmlMode: types.OptYes})
 		require.NoError(t, err)
@@ -273,7 +273,7 @@ func TestSizzle(t *testing.T) {
 		doc, err := dom.ParseDocument("<?xml version='1.0' encoding='UTF-8'?><root><elem id='1'/></root>", &parser.ParserOptions{XmlMode: true})
 		require.NoError(t, err)
 		// Non-qSA path correctly handles numeric ids (jQuery #14142)
-		nodes, err = SelectAll("elem:not(:has(*))", doc.Children, nil)
+		nodes, err = SelectAll("elem:not(:has(*))", doc, nil)
 		require.NoError(t, err)
 		assert.Len(t, nodes, 1)
 	})
@@ -282,7 +282,7 @@ func TestSizzle(t *testing.T) {
 		document := loadDoc()
 
 		broken := func(t *testing.T, selector string) {
-			_, err := Compile(selector, nil, nil)
+			_, err := Compile[[]*dom.Node](selector, nil, nil)
 			assert.Error(t, err)
 		}
 
@@ -380,10 +380,10 @@ func TestSizzle(t *testing.T) {
 		// Escaped ID as context
 		node, err := SelectOne("#fiddle\\\\Foo", document, nil)
 		require.NoError(t, err)
-		test(t,
+		testOne(t,
 			"> span",
 			[]string{"fiddleSpan"},
-			[]*dom.Node{node},
+			node,
 		)
 
 		domutils.RemoveElement(fiddle)
@@ -432,7 +432,7 @@ func TestSizzle(t *testing.T) {
 
 		// ID selector within the context of another element
 		body := domutils.GetElementsByTagName("body", document, true, 1)[0]
-		test(t, "div#form", []string{}, []*dom.Node{body})
+		testOne(t, "div#form", []string{}, body)
 
 		// Underscore ID
 		test(t, "#types_all", []string{"types_all"}, document)
@@ -490,7 +490,7 @@ func TestSizzle(t *testing.T) {
 		}
 
 		// Finding a second class.
-		nodes, err := SelectAll(".e", []*dom.Node{div}, nil)
+		nodes, err := SelectAll(".e", div, nil)
 		require.NoError(t, err)
 		assert.Equal(t, nodes, []*dom.Node{div.Children[0]})
 
@@ -498,7 +498,7 @@ func TestSizzle(t *testing.T) {
 		lastChild.Attribs.Set("class", "e")
 
 		// Finding a modified class.
-		nodes, err = SelectAll(".e", []*dom.Node{div}, nil)
+		nodes, err = SelectAll(".e", div, nil)
 		require.NoError(t, err)
 		assert.Equal(t, nodes, []*dom.Node{div.Children[0], lastChild})
 
@@ -527,14 +527,14 @@ func TestSizzle(t *testing.T) {
 		// Testing class on global object doesn't error
 		// expect(CSSselect.is(global, ".foo")).toBe(false);
 		// Classes match Object.prototype properties
-		nodes, err = SelectAll(".e.hasOwnProperty.toString", []*dom.Node{div}, nil)
+		nodes, err = SelectAll(".e.hasOwnProperty.toString", div, nil)
 		require.NoError(t, err)
 		assert.Equal(t, nodes, []*dom.Node{lastChild})
 
 		div2 := parseDOM(
 			"<div><svg width='200' height='250' version='1.1' xmlns='http://www.w3.org/2000/svg'><rect x='10' y='10' width='30' height='30' class='foo'></rect></svg></div>",
 			false,
-		)
+		)[0]
 		// Class selector against SVG
 		nodes, err = SelectAll(".foo", div2, nil)
 		require.NoError(t, err)
@@ -563,16 +563,16 @@ func TestSizzle(t *testing.T) {
 
 		form1 := domutils.GetElementById("form", document, true)
 		// Name selector within the context of another element
-		test(t, "input[name=action]", []string{"text1"}, []*dom.Node{form1})
+		testOne(t, "input[name=action]", []string{"text1"}, form1)
 		// Name selector for grouped form element within the context of another element
-		test(t, "input[name='foo[bar]']", []string{"hidden2"}, []*dom.Node{form1})
+		testOne(t, "input[name='foo[bar]']", []string{"hidden2"}, form1)
 
 		body := domutils.GetElementsByTagName("body", document, true, 1)[0]
 		form2 := parseDOM("<form><input name='id'/></form>", false)[0]
 		domutils.AppendChild(body, form2)
 
 		// Make sure that rooted queries on forms (with possible expandos) work.
-		result, err := SelectAll("input", []*dom.Node{form2}, nil)
+		result, err := SelectAll("input", form2, nil)
 		require.NoError(t, err)
 		assert.Len(t, result, 1)
 
@@ -727,15 +727,15 @@ func TestSizzle(t *testing.T) {
 		siblingFirst := domutils.GetElementById("siblingfirst", document, true)
 
 		// Element Preceded By with a context.
-		test(t, "~ em", []string{"siblingnext", "siblingthird"}, []*dom.Node{siblingFirst})
+		testOne(t, "~ em", []string{"siblingnext", "siblingthird"}, siblingFirst)
 		// Element Directly Preceded By with a context.
-		test(t, "+ em", []string{"siblingnext"}, []*dom.Node{siblingFirst})
+		testOne(t, "+ em", []string{"siblingnext"}, siblingFirst)
 
 		en := domutils.GetElementById("en", document, true)
 		// Compound selector with context, beginning with sibling test.
-		test(t, "+ p, a", []string{"yahoo", "sap"}, []*dom.Node{en})
+		testOne(t, "+ p, a", []string{"yahoo", "sap"}, en)
 		// Compound selector with context, containing sibling test.
-		test(t, "a, + p", []string{"yahoo", "sap"}, []*dom.Node{en})
+		testOne(t, "a, + p", []string{"yahoo", "sap"}, en)
 
 		// Multiple combinators selects all levels
 		test(t, "#siblingTest em *", []string{
@@ -778,10 +778,10 @@ func TestSizzle(t *testing.T) {
 		// Child of scope
 		scope, err := SelectOne("#scopeTest", document, nil)
 		require.NoError(t, err)
-		test(t,
+		testOne(t,
 			":scope > label",
 			[]string{"scopeTest--child"},
-			[]*dom.Node{scope},
+			scope,
 		)
 	})
 
@@ -855,16 +855,16 @@ func TestSizzle(t *testing.T) {
 		// Without context, double-quoted attribute containing ','
 		test(t, "input[data-comma=\"0,1\"]", []string{"el12087"}, document)
 		// With context, single-quoted attribute containing ','
-		test(t,
+		testOne(t,
 			"input[data-comma='0,1']",
 			[]string{"el12087"},
-			domutils.GetElementById("t12087", document, true).Children,
+			domutils.GetElementById("t12087", document, true),
 		)
 		// With context, double-quoted attribute containing ','
-		test(t,
+		testOne(t,
 			"input[data-comma=\"0,1\"]",
 			[]string{"el12087"},
-			domutils.GetElementById("t12087", document, true).Children,
+			domutils.GetElementById("t12087", document, true),
 		)
 
 		// Multiple Attribute Equals
@@ -1045,7 +1045,7 @@ func TestSizzle(t *testing.T) {
 		div.Children = parseDOM("<div id='foo' xml:test='something'></div>", false)
 
 		// Finding by attribute with escaped characters.
-		children, err := SelectAll("[xml\\:test]", div.Children, nil)
+		children, err := SelectAll("[xml\\:test]", div, nil)
 		require.NoError(t, err)
 		assert.Equal(t, children, div.Children)
 
@@ -1517,7 +1517,7 @@ func TestSizzle(t *testing.T) {
 		domutils.RemoveElement(tmp)
 
 		// Caching system tolerates recursive selection
-		test(t,
+		testOne(t,
 			"[id='select1'] *:not(:last-child), [id='select2'] *:not(:last-child)",
 			[]string{
 				"option1a",
@@ -1527,7 +1527,7 @@ func TestSizzle(t *testing.T) {
 				"option2b",
 				"option2c",
 			},
-			[]*dom.Node{domutils.GetElementById("qunit-fixture", document, true)},
+			domutils.GetElementById("qunit-fixture", document, true),
 		)
 
 		/*
@@ -1756,7 +1756,7 @@ func TestSizzle(t *testing.T) {
 		doc, err := dom.ParseDocument(html, &parser.ParserOptions{LowerCaseAttributeNames: true, DecodeEntities: true, RecognizeSelfClosing: true})
 		require.NoError(t, err)
 
-		matches, err := SelectAll("section:has(div p)", doc.Children, nil)
+		matches, err := SelectAll("section:has(div p)", doc, nil)
 		require.NoError(t, err)
 
 		assert.Len(t, matches, 0)
@@ -1865,15 +1865,15 @@ func TestSizzle(t *testing.T) {
 	t.Run("caching", func(t *testing.T) {
 		document := loadDoc()
 		ap := domutils.GetElementById("ap", document, true)
-		_, err := SelectAll(":not(code)", []*dom.Node{ap}, nil)
+		_, err := SelectAll(":not(code)", ap, nil)
 		require.NoError(t, err)
 		// Reusing selector with new context
 		foo := domutils.GetElementById("foo", document, true)
 		require.NotNil(t, foo)
-		test(t,
+		testOne(t,
 			":not(code)",
 			[]string{"sndp", "en", "yahoo", "sap", "anchor2", "simon"},
-			foo.Children,
+			foo,
 		)
 	})
 

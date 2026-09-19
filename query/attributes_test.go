@@ -18,7 +18,7 @@ func TestAttributes(t *testing.T) {
 		t.Run("should for =", func(t *testing.T) {
 			matches, err := SelectAll(
 				`[data-foo="indeed-that's a delicate matter." i]`,
-				children,
+				doc,
 				nil,
 			)
 
@@ -29,74 +29,74 @@ func TestAttributes(t *testing.T) {
 
 			matches, err = SelectAll(
 				`[data-foo="inDeeD-THAT's a DELICATE matteR." i]`,
-				children,
+				doc,
 				nil,
 			)
 			assert.Equal(t, []*dom.Node{children[1]}, matches)
 		})
 
 		t.Run("should for ^=", func(t *testing.T) {
-			matches, err := SelectAll("[data-foo^=IN i]", children, nil)
+			matches, err := SelectAll("[data-foo^=IN i]", doc, nil)
 			assert.Nil(t, err)
 			assert.Len(t, matches, 2)
 			assert.Equal(t, children, matches)
-			matches, err = SelectAll("[data-foo^=in i]", children, nil)
+			matches, err = SelectAll("[data-foo^=in i]", doc, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, children, matches)
-			matches, err = SelectAll("[data-foo^=iN i]", children, nil)
+			matches, err = SelectAll("[data-foo^=iN i]", doc, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, children, matches)
 		})
 
 		t.Run("should for $=", func(t *testing.T) {
-			matches, err := SelectAll(`[data-foo$="MATTER." i]`, children, nil)
+			matches, err := SelectAll(`[data-foo$="MATTER." i]`, doc, nil)
 			assert.Nil(t, err)
 			assert.Len(t, matches, 2)
 			assert.Equal(t, children, matches)
-			matches, err = SelectAll(`[data-foo$="matter." i]`, children, nil)
+			matches, err = SelectAll(`[data-foo$="matter." i]`, doc, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, children, matches)
-			matches, err = SelectAll(`[data-foo$="MaTtEr." i]`, children, nil)
+			matches, err = SelectAll(`[data-foo$="MaTtEr." i]`, doc, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, children, matches)
 		})
 
 		t.Run("should for !=", func(t *testing.T) {
-			matches, err := SelectAll(`[data-foo!="indeed-that's a delicate matter." i]`, children, nil)
+			matches, err := SelectAll(`[data-foo!="indeed-that's a delicate matter." i]`, doc, nil)
 			assert.Nil(t, err)
 			assert.Len(t, matches, 1)
 			assert.Equal(t, []*dom.Node{children[0]}, matches)
-			matches, err = SelectAll(`[data-foo!="inDeeD-THAT's a DELICATE matteR." i]`, children, nil)
+			matches, err = SelectAll(`[data-foo!="inDeeD-THAT's a DELICATE matteR." i]`, doc, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, []*dom.Node{children[0]}, matches)
 		})
 
 		t.Run("should for *=", func(t *testing.T) {
-			matches, err := SelectAll("[data-foo*=IT i]", children, nil)
+			matches, err := SelectAll("[data-foo*=IT i]", doc, nil)
 			assert.Nil(t, err)
 			assert.Len(t, matches, 1)
 			assert.Equal(t, []*dom.Node{children[0]}, matches)
-			matches, err = SelectAll("[data-foo*=tH i]", children, nil)
+			matches, err = SelectAll("[data-foo*=tH i]", doc, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, children, matches)
 		})
 
 		t.Run("should for |=", func(t *testing.T) {
-			matches, err := SelectAll("[data-foo|=indeed i]", children, nil)
+			matches, err := SelectAll("[data-foo|=indeed i]", doc, nil)
 			assert.Nil(t, err)
 			assert.Len(t, matches, 1)
 			assert.Equal(t, []*dom.Node{children[1]}, matches)
-			matches, err = SelectAll("[data-foo|=inDeeD i]", children, nil)
+			matches, err = SelectAll("[data-foo|=inDeeD i]", doc, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, []*dom.Node{children[1]}, matches)
 		})
 
 		t.Run("should for ~=", func(t *testing.T) {
-			matches, err := SelectAll("[data-foo~=IT i]", children, nil)
+			matches, err := SelectAll("[data-foo~=IT i]", doc, nil)
 			assert.Nil(t, err)
 			assert.Len(t, matches, 1)
 			assert.Equal(t, []*dom.Node{children[0]}, matches)
-			matches, err = SelectAll("[data-foo~=dElIcAtE i]", children, nil)
+			matches, err = SelectAll("[data-foo~=dElIcAtE i]", doc, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, []*dom.Node{children[1]}, matches)
 		})
@@ -104,19 +104,19 @@ func TestAttributes(t *testing.T) {
 
 	t.Run("no matches", func(t *testing.T) {
 		t.Run("should for ~=", func(t *testing.T) {
-			query, err := compileUnsafe("[foo~='baz bar']", nil, nil)
+			query, err := compileUnsafe[[]*dom.Node]("[foo~='baz bar']", nil, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, types.MatchTypeAlwaysFalse, query.Type)
 		})
 
 		t.Run("should for $=", func(t *testing.T) {
-			query, err := compileUnsafe("[foo$='']", nil, nil)
+			query, err := compileUnsafe[[]*dom.Node]("[foo$='']", nil, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, types.MatchTypeAlwaysFalse, query.Type)
 		})
 
 		t.Run("should for *=", func(t *testing.T) {
-			query, err := compileUnsafe("[foo*='']", nil, nil)
+			query, err := compileUnsafe[[]*dom.Node]("[foo*='']", nil, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, types.MatchTypeAlwaysFalse, query.Type)
 		})

@@ -30,10 +30,10 @@ func convertOptionFormats(
  * @param options Compilation options.
  * @param context Optional context for the selector.
  */
-func Compile(
+func Compile[T *dom.Node | []*dom.Node](
 	selector string,
 	options *types.Options,
-	context []*dom.Node,
+	context T,
 ) (func(*dom.Node) bool, error) {
 	opts := convertOptionFormats(options)
 	next, err := compileUnsafe(selector, opts, context)
@@ -55,10 +55,10 @@ func Compile(
 /**
  * Like `compile`, but does not add a check if elements are tags.
  */
-func compileUnsafe(
+func compileUnsafe[T *dom.Node | []*dom.Node](
 	selector string,
 	options *types.Options,
-	context []*dom.Node,
+	context T,
 ) (*types.CompiledQuery, error) {
 	token, err := parser.Parse(selector)
 	if err != nil {
@@ -68,24 +68,54 @@ func compileUnsafe(
 	return compileToken(token, options, context)
 }
 
-func prepareContext(
-	elems []*dom.Node,
+func prepareContext[T *dom.Node | []*dom.Node](
+	elem T,
 	shouldTestNextSiblings bool,
 ) []*dom.Node {
-	/*
-	 * Add siblings if the query requires them.
-	 * See https://github.com/fb55/css-select/pull/43#issuecomment-225414692
-	 */
-	if shouldTestNextSiblings {
-		elems = appendNextSiblings(elems)
-	}
+	switch v := any(elem).(type) {
+	case *dom.Node:
+		{
+			/*
+			 * Add siblings if the query requires them.
+			 * See https://github.com/fb55/css-select/pull/43#issuecomment-225414692
+			 */
+			if shouldTestNextSiblings {
+				elems := appendNextSiblings(v)
 
-	return domutils.RemoveSubsets(elems)
+				return domutils.RemoveSubsets(elems)
+			}
+
+			return domutils.GetChildren(v)
+		}
+	case []*dom.Node:
+		{
+			elems := v
+			/*
+			 * Add siblings if the query requires them.
+			 * See https://github.com/fb55/css-select/pull/43#issuecomment-225414692
+			 */
+			if shouldTestNextSiblings {
+				elems = appendNextSiblings(elems)
+			}
+
+			return domutils.RemoveSubsets(elems)
+		}
+	default:
+		return nil
+	}
 }
 
-func appendNextSiblings(
-	elems []*dom.Node,
+func appendNextSiblings[T *dom.Node | []*dom.Node](
+	elem T,
 ) []*dom.Node {
+	var elems []*dom.Node
+	switch v := any(elem).(type) {
+	case *dom.Node:
+		elems = append(elems, v)
+	case []*dom.Node:
+		elems = slices.Clone(v)
+	}
+
 	elemsLength := len(elems)
 	for i := 0; i < elemsLength; i++ {
 		nextSiblings := helpers.GetNextSiblings(elems[i])
@@ -105,9 +135,9 @@ func appendNextSiblings(
  * @returns All matching elements.
  *
  */
-func SelectAll(
+func SelectAll[T *dom.Node | []*dom.Node](
 	selector string,
-	elements []*dom.Node,
+	elements T,
 	options *types.Options,
 ) ([]*dom.Node, error) {
 	opts := convertOptionFormats(options)
@@ -137,9 +167,9 @@ func SelectAll(
  * @see compile for supported selector queries.
  * @returns the first match, or null if there was no match.
  */
-func SelectOne(
+func SelectOne[T *dom.Node | []*dom.Node](
 	selector string,
-	elements []*dom.Node,
+	elements T,
 	options *types.Options,
 ) (*dom.Node, error) {
 	opts := convertOptionFormats(options)
@@ -176,7 +206,7 @@ func Is(
 	query string,
 	options *types.Options,
 ) (bool, error) {
-	compiled, err := Compile(query, options, nil)
+	compiled, err := Compile[*dom.Node](query, options, nil)
 	if err != nil {
 		return false, err
 	}

@@ -56,18 +56,30 @@ func or(a *types.CompiledQuery, b *types.CompiledQuery) *types.CompiledQuery {
 	}
 }
 
-func compileToken(
+func compileToken[T *dom.Node | []*dom.Node](
 	token [][]*parser.Selector,
 	options *types.Options,
-	context []*dom.Node,
+	context T,
 ) (*types.CompiledQuery, error) {
 	for _, t := range token {
 		helpers.SortRules(t)
 	}
 
-	finalContext := context
+	var isArrayContext bool
+	var finalContext []*dom.Node
+	switch v := any(context).(type) {
+	case *dom.Node:
+		if v != nil {
+			finalContext = []*dom.Node{v}
+		}
+	case []*dom.Node:
+		finalContext = v
+		isArrayContext = true
+	}
+
 	if options != nil && options.Context != nil {
 		finalContext = options.Context
+		isArrayContext = true
 	}
 	rootFunc := &types.CompiledQuery{
 		Match: func(element *dom.Node, scope *dom.Node) bool {
@@ -103,7 +115,7 @@ combineLoop:
 
 			if first.Type != parser.SelectorTypePseudo || first.Name != "scope" {
 				// Ignore
-			} else if second.Type == parser.SelectorTypeDescendant {
+			} else if isArrayContext && second.Type == parser.SelectorTypeDescendant {
 				rules[1] = FLEXIBLE_DESCENDANT_TOKEN
 			} else if second.Type == parser.SelectorTypeAdjacent || second.Type == parser.SelectorTypeSibling {
 				shouldTestNextSiblings = true

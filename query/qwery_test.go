@@ -40,24 +40,6 @@ var options = &types.Options{
 	},
 }
 
-func selectAll(selector string, context []*dom.Node) []*dom.Node {
-	if context == nil {
-		node := parseDocument(qwery)
-		context = node.Children
-	}
-
-	matches, err := SelectAll(selector, context, options)
-	if err != nil {
-		panic(err)
-	}
-
-	return matches
-}
-
-func _selectAll(selector string, context []*dom.Node) []*dom.Node {
-	return internal.MapFunc(selectAll(selector, context), clearNode)
-}
-
 func getElementById(id string, context []*dom.Node) *dom.Node {
 	if context == nil {
 		node := parseDocument(qwery)
@@ -102,6 +84,38 @@ var pseudos = internal.FilterFunc(
 )
 
 func TestQwery(t *testing.T) {
+	selectAll := func(selector string, context []*dom.Node) []*dom.Node {
+		if context == nil {
+			node := parseDocument(qwery)
+			context = node.Children
+		}
+
+		matches, err := SelectAll(selector, context, options)
+		if err != nil {
+			panic(err)
+		}
+
+		return matches
+	}
+
+	selectAllIn := func(selector string, context *dom.Node) []*dom.Node {
+		if context == nil {
+			node := parseDocument(qwery)
+			context = node
+		}
+
+		matches, err := SelectAll(selector, context, options)
+		if err != nil {
+			panic(err)
+		}
+
+		return matches
+	}
+
+	_selectAll := func(selector string, context []*dom.Node) []*dom.Node {
+		return internal.MapFunc(selectAll(selector, context), clearNode)
+	}
+
 	t.Run("Contexts", func(t *testing.T) {
 		t.Run("should be able to pass optional context", func(t *testing.T) {
 			assert.Len(t, selectAll(".a", nil), 3)                      // No context found 3 elements (.a)
@@ -283,7 +297,7 @@ func TestQwery(t *testing.T) {
 			assert.Len(t, selectAll("> .direct-descend", selectAll("#direct-descend", nil)), 2)     // Found two direct descendents using > first
 			assert.Len(t, selectAll("~ .sibling-selector", selectAll("#sibling-selector", nil)), 2) // Found two siblings with ~ first
 			assert.Len(t, selectAll("+ .sibling-selector", selectAll("#sibling-selector", nil)), 1) // Found one sibling with + first
-			assert.Len(t, selectAll("> .tokens a", []*dom.Node{selectAll(".idless", nil)[0]}), 1)   // Found one sibling from a root with no id
+			assert.Len(t, selectAllIn("> .tokens a", selectAll(".idless", nil)[0]), 1)              // Found one sibling from a root with no id
 		})
 
 		// Should be able to query on an element that hasn't been inserted into the dom
@@ -302,12 +316,12 @@ func TestQwery(t *testing.T) {
 		})
 
 		t.Run("exclude self in match", func(t *testing.T) {
-			assert.Len(t, selectAll(".order-matters", selectAll("#order-matters", nil)[0].Children), 4) // Should not include self in element-context queries
+			assert.Len(t, selectAllIn(".order-matters", selectAll("#order-matters", nil)[0]), 4) // Should not include self in element-context queries
 		})
 
 		// Because form's have .length
 		t.Run("forms can be used as contexts", func(t *testing.T) {
-			assert.Len(t, selectAll("*", selectAll("form", nil)[0].Children), 3) // Found 3 elements under &lt;form&gt;
+			assert.Len(t, selectAllIn("*", selectAll("form", nil)[0]), 3) // Found 3 elements under &lt;form&gt;
 		})
 	})
 

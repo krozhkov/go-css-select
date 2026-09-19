@@ -56,13 +56,13 @@ func TestApi(t *testing.T) {
 		})
 		t.Run("should support pseudos led by a traversal (#111)", func(t *testing.T) {
 			dom2 := parseDOM(`<div><div class="foo">a</div><div class="bar">b</div></div>`, false)[0]
-			a, err := SelectAll(".foo:has(+.bar)", []*dom.Node{dom2}, nil)
+			a, err := SelectAll(".foo:has(+.bar)", dom2, nil)
 			assert.Nil(t, err)
 			assert.Len(t, a, 1)
 			assert.Equal(t, dom2.Children[0], a[0])
 		})
 		t.Run("should accept document root nodes", func(t *testing.T) {
-			doc := parseDOM("<div id=foo><p>foo</p></div>", false)
+			doc := parseDocument("<div id=foo><p>foo</p></div>")
 			matches, err := SelectAll(":contains(foo)", doc, nil)
 			assert.Nil(t, err)
 			assert.Len(t, matches, 2)
@@ -77,18 +77,18 @@ func TestApi(t *testing.T) {
 
 			two, err := SelectOne(".two", doc, nil)
 			assert.Nil(t, err)
-			three, err := SelectOne(".parent .two .p2", []*dom.Node{two}, &types.Options{RelativeSelector: types.OptNo})
+			three, err := SelectOne(".parent .two .p2", two, &types.Options{RelativeSelector: types.OptNo})
 			assert.Nil(t, err)
 			copy, err := three.CloneNode(false)
 			assert.Nil(t, err)
 			assert.Equal(t, dom.NewElement("p", orderedmap.NewOrderedMapWithElements(&orderedmap.Element[string, string]{Key: "class", Value: "p2"}), nil, dom.ElementTypeTag), copy)
 
-			four, err := SelectOne(".parent .two .p3", []*dom.Node{two}, &types.Options{RelativeSelector: types.OptNo})
+			four, err := SelectOne(".parent .two .p3", two, &types.Options{RelativeSelector: types.OptNo})
 			assert.Nil(t, err)
 			assert.Nil(t, four)
 		})
 		t.Run("cannot query element within template context, but still query template itself", func(t *testing.T) {
-			doc := parseDOM(`<template><div><p id="insert"></p></div></template>`, false)
+			doc := parseDocument(`<template><div><p id="insert"></p></div></template>`)
 
 			matches, err := SelectAll("#insert", doc, nil)
 			assert.Nil(t, err)
@@ -121,52 +121,52 @@ func TestApi(t *testing.T) {
 
 	t.Run("errors", func(t *testing.T) {
 		t.Run("should throw with a pseudo-element", func(t *testing.T) {
-			_, err := Compile("::after", nil, nil)
+			_, err := Compile[[]*dom.Node]("::after", nil, nil)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), "not supported")
 		})
 
 		t.Run("should throw an error if encountering a traversal-first selector with relative selectors disabled", func(t *testing.T) {
-			_, err := Compile("> p", &types.Options{RelativeSelector: types.OptNo}, nil)
+			_, err := Compile[[]*dom.Node]("> p", &types.Options{RelativeSelector: types.OptNo}, nil)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), "relative selectors are not allowed when the `relativeSelector` option is disabled")
 		})
 
 		t.Run("should throw with a column combinator", func(t *testing.T) {
-			_, err := Compile("foo || bar", &types.Options{RelativeSelector: types.OptNo}, nil)
+			_, err := Compile[[]*dom.Node]("foo || bar", &types.Options{RelativeSelector: types.OptNo}, nil)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), notYet)
 		})
 
 		t.Run("should throw with attribute namespace", func(t *testing.T) {
-			_, err := Compile("[foo|bar]", nil, nil)
+			_, err := Compile[[]*dom.Node]("[foo|bar]", nil, nil)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), notYet)
 			//_, err = Compile("[|bar]", nil, nil)
 			//assert.NotNil(t, err)
 			//assert.Contains(t, err.Error(), notYet)
-			_, err = Compile("[*|bar]", nil, nil)
+			_, err = Compile[[]*dom.Node]("[*|bar]", nil, nil)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), notYet)
 		})
 
 		t.Run("should throw with tag namespace", func(t *testing.T) {
-			_, err := Compile("foo|bar", nil, nil)
+			_, err := Compile[[]*dom.Node]("foo|bar", nil, nil)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), notYet)
-			_, err = Compile("|bar", nil, nil)
+			_, err = Compile[[]*dom.Node]("|bar", nil, nil)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), notYet)
-			_, err = Compile("*|bar", nil, nil)
+			_, err = Compile[[]*dom.Node]("*|bar", nil, nil)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), notYet)
 		})
 
 		t.Run("should throw with universal selector", func(t *testing.T) {
-			_, err := Compile("foo|*", nil, nil)
+			_, err := Compile[[]*dom.Node]("foo|*", nil, nil)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), notYet)
-			_, err = Compile("|*", nil, nil)
+			_, err = Compile[[]*dom.Node]("|*", nil, nil)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), notYet)
 			//_, err = Compile("*|*", nil, nil)
@@ -175,11 +175,11 @@ func TestApi(t *testing.T) {
 		})
 
 		t.Run("should throw if parameter is supplied for pseudo", func(t *testing.T) {
-			_, err := Compile(":any-link(test)", nil, nil)
+			_, err := Compile[[]*dom.Node](":any-link(test)", nil, nil)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), "doesn't have any arguments")
 
-			_, err = Compile(":only-child(test)", nil, nil)
+			_, err = Compile[[]*dom.Node](":only-child(test)", nil, nil)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), "doesn't have any arguments")
 		})
@@ -193,7 +193,7 @@ func TestApi(t *testing.T) {
 				},
 			}
 
-			_, err := Compile(":foovalue", options, nil)
+			_, err := Compile[[]*dom.Node](":foovalue", options, nil)
 			assert.Nil(t, err) // we can't change the number of arguments in function
 			// assert.Contains(t, err.Error(), "requires an argument")
 		})
@@ -201,10 +201,10 @@ func TestApi(t *testing.T) {
 
 	t.Run("unsatisfiable and universally valid selectors", func(t *testing.T) {
 		t.Run("in :not", func(t *testing.T) {
-			query, err := compileUnsafe(":not(*)", nil, nil)
+			query, err := compileUnsafe[[]*dom.Node](":not(*)", nil, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, types.MatchTypeAlwaysFalse, query.Type)
-			query, err = compileUnsafe(":not(:not(:not(*)))", nil, nil)
+			query, err = compileUnsafe[[]*dom.Node](":not(:not(:not(*)))", nil, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, types.MatchTypeAlwaysFalse, query.Type)
 		})
@@ -220,31 +220,31 @@ func TestApi(t *testing.T) {
 			assert.Equal(t, "p", matches2[0].TagName())
 		})
 		t.Run("in :is", func(t *testing.T) {
-			query, err := compileUnsafe(":is(*)", nil, nil)
+			query, err := compileUnsafe[[]*dom.Node](":is(*)", nil, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, types.MatchTypeAlwaysTrue, query.Type)
-			query, err = compileUnsafe(":is(:not(:not(*)))", nil, nil)
+			query, err = compileUnsafe[[]*dom.Node](":is(:not(:not(*)))", nil, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, types.MatchTypeAlwaysTrue, query.Type)
-			query, err = compileUnsafe(":is(*, :scope)", nil, nil)
+			query, err = compileUnsafe[[]*dom.Node](":is(*, :scope)", nil, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, types.MatchTypeAlwaysTrue, query.Type)
 		})
 
 		t.Run("should skip unsatisfiable", func(t *testing.T) {
-			query, err := compileUnsafe("* :not(*) foo", nil, nil)
+			query, err := compileUnsafe[[]*dom.Node]("* :not(*) foo", nil, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, types.MatchTypeAlwaysFalse, query.Type)
 		})
 
 		t.Run("should promote universally valid", func(t *testing.T) {
-			query, err := compileUnsafe("*, foo", nil, nil)
+			query, err := compileUnsafe[[]*dom.Node]("*, foo", nil, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, types.MatchTypeAlwaysTrue, query.Type)
 		})
 
 		t.Run("should promote `rootFunc`", func(t *testing.T) {
-			query, err := compileUnsafe(":is(*), foo", nil, nil)
+			query, err := compileUnsafe[[]*dom.Node](":is(*), foo", nil, nil)
 			assert.Nil(t, err)
 			assert.Equal(t, types.MatchTypeAlwaysTrue, query.Type)
 		})
@@ -291,7 +291,7 @@ func TestApi(t *testing.T) {
 			assert.Equal(t, "div", matches[0].Name)
 
 			multiLevelDom := parseDOM("<a><b><c><d>", false)[0]
-			matches, err = SelectAll(":is(* c)", []*dom.Node{multiLevelDom}, nil)
+			matches, err = SelectAll(":is(* c)", multiLevelDom, nil)
 			assert.Nil(t, err)
 			assert.Len(t, matches, 1)
 			assert.Equal(t, "c", matches[0].Name)
