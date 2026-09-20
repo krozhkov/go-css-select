@@ -25,7 +25,6 @@ func convertOptionFormats(
  *
  * The returned function checks if each passed node is an element. Use
  * `_compileUnsafe` to skip this check.
- *
  * @param selector Selector to compile.
  * @param options Compilation options.
  * @param context Optional context for the selector.
@@ -35,8 +34,8 @@ func Compile[T *dom.Node | []*dom.Node](
 	options *types.Options,
 	context T,
 ) (func(*dom.Node) bool, error) {
-	opts := convertOptionFormats(options)
-	next, err := compileUnsafe(selector, opts, context)
+	convertedOptions := convertOptionFormats(options)
+	next, err := compileUnsafe(selector, convertedOptions, context)
 	if err != nil {
 		return nil, err
 	}
@@ -47,13 +46,16 @@ func Compile[T *dom.Node | []*dom.Node](
 		}, nil
 	}
 
-	return func(elem *dom.Node) bool {
-		return dom.IsTag(elem) && next.Match(elem, nil)
+	return func(element *dom.Node) bool {
+		return dom.IsTag(element) && next.Match(element, nil)
 	}, nil
 }
 
 /**
  * Like `compile`, but does not add a check if elements are tags.
+ * @param selector Selector used to match elements.
+ * @param options Options that control this operation.
+ * @param context Context nodes used to scope selector matching.
  */
 func compileUnsafe[T *dom.Node | []*dom.Node](
 	selector string,
@@ -68,11 +70,17 @@ func compileUnsafe[T *dom.Node | []*dom.Node](
 	return compileToken(token, options, context)
 }
 
+/**
+ * Normalize a query context and optionally include next siblings.
+ * @param element Elements to test against sibling-dependent selectors.
+ * @param adapter Adapter implementation used for DOM operations.
+ * @param shouldTestNextSiblings Whether sibling combinators should include following siblings.
+ */
 func prepareContext[T *dom.Node | []*dom.Node](
-	elem T,
+	element T,
 	shouldTestNextSiblings bool,
 ) []*dom.Node {
-	switch v := any(elem).(type) {
+	switch v := any(element).(type) {
 	case *dom.Node:
 		{
 			/*
@@ -80,25 +88,25 @@ func prepareContext[T *dom.Node | []*dom.Node](
 			 * See https://github.com/fb55/css-select/pull/43#issuecomment-225414692
 			 */
 			if shouldTestNextSiblings {
-				elems := appendNextSiblings(v)
+				elements := appendNextSiblings(v)
 
-				return domutils.RemoveSubsets(elems)
+				return domutils.RemoveSubsets(elements)
 			}
 
 			return domutils.GetChildren(v)
 		}
 	case []*dom.Node:
 		{
-			elems := v
+			elements := v
 			/*
 			 * Add siblings if the query requires them.
 			 * See https://github.com/fb55/css-select/pull/43#issuecomment-225414692
 			 */
 			if shouldTestNextSiblings {
-				elems = appendNextSiblings(elems)
+				elements = appendNextSiblings(elements)
 			}
 
-			return domutils.RemoveSubsets(elems)
+			return domutils.RemoveSubsets(elements)
 		}
 	default:
 		return nil
@@ -106,42 +114,41 @@ func prepareContext[T *dom.Node | []*dom.Node](
 }
 
 func appendNextSiblings[T *dom.Node | []*dom.Node](
-	elem T,
+	element T,
 ) []*dom.Node {
-	var elems []*dom.Node
-	switch v := any(elem).(type) {
+	var elements []*dom.Node
+	switch v := any(element).(type) {
 	case *dom.Node:
-		elems = append(elems, v)
+		elements = append(elements, v)
 	case []*dom.Node:
-		elems = slices.Clone(v)
+		elements = slices.Clone(v)
 	}
 
-	elemsLength := len(elems)
-	for i := 0; i < elemsLength; i++ {
-		nextSiblings := helpers.GetNextSiblings(elems[i])
-		elems = slices.Grow(elems, len(nextSiblings))
-		elems = append(elems, nextSiblings...)
+	elementsLength := len(elements)
+	for i := 0; i < elementsLength; i++ {
+		nextSiblings := helpers.GetNextSiblings(elements[i])
+		elements = slices.Grow(elements, len(nextSiblings))
+		elements = append(elements, nextSiblings...)
 	}
-	return elems
+	return elements
 }
 
 /**
  * @template Node The generic Node type for the DOM adapter being used.
  * @template ElementNode The Node type for elements for the DOM adapter being used.
- * @param elems Elements to query. If it is an element, its children will be queried.
+ * @param elements Elements to query. If it is an element, its children will be queried.
  * @param query can be either a CSS selector string or a compiled query function.
  * @param [options] options for querying the document.
  * @see compile for supported selector queries.
  * @returns All matching elements.
- *
  */
 func SelectAll[T *dom.Node | []*dom.Node](
 	selector string,
 	elements T,
 	options *types.Options,
 ) ([]*dom.Node, error) {
-	opts := convertOptionFormats(options)
-	query, err := compileUnsafe(selector, opts, elements)
+	convertedOptions := convertOptionFormats(options)
+	query, err := compileUnsafe(selector, convertedOptions, elements)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +162,7 @@ func SelectAll[T *dom.Node | []*dom.Node](
 		return []*dom.Node{}, nil
 	}
 
-	return helpers.FindAll(query.Match, filteredElements, nil, opts), nil
+	return helpers.FindAll(query.Match, filteredElements, nil, convertedOptions), nil
 }
 
 /**
@@ -172,8 +179,8 @@ func SelectOne[T *dom.Node | []*dom.Node](
 	elements T,
 	options *types.Options,
 ) (*dom.Node, error) {
-	opts := convertOptionFormats(options)
-	query, err := compileUnsafe(selector, opts, elements)
+	convertedOptions := convertOptionFormats(options)
+	query, err := compileUnsafe(selector, convertedOptions, elements)
 	if err != nil {
 		return nil, err
 	}
@@ -187,22 +194,21 @@ func SelectOne[T *dom.Node | []*dom.Node](
 		return nil, nil
 	}
 
-	return helpers.FindOne(query.Match, filteredElements, nil, opts), nil
+	return helpers.FindOne(query.Match, filteredElements, nil, convertedOptions), nil
 }
 
 /**
  * Tests whether or not an element is matched by query.
- *
  * @template Node The generic Node type for the DOM adapter being used.
  * @template ElementNode The Node type for elements for the DOM adapter being used.
- * @param elem The element to test if it matches the query.
+ * @param element The element to test if it matches the query.
  * @param query can be either a CSS selector string or a compiled query function.
  * @param [options] options for querying the document.
  * @see compile for supported selector queries.
- * @returns
+ * @returns Whether the element matches the query.
  */
 func Is(
-	elem *dom.Node,
+	element *dom.Node,
 	query string,
 	options *types.Options,
 ) (bool, error) {
@@ -211,5 +217,5 @@ func Is(
 		return false, err
 	}
 
-	return compiled(elem), nil
+	return compiled(element), nil
 }

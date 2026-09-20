@@ -7,7 +7,6 @@ import (
 	"github.com/elliotchance/orderedmap/v3"
 	"github.com/krozhkov/go-css-select/query/types"
 	"github.com/krozhkov/go-htmlparser2/dom"
-	"github.com/krozhkov/go-htmlparser2/domutils"
 	"github.com/krozhkov/go-htmlparser2/parser"
 	"github.com/stretchr/testify/assert"
 )
@@ -169,7 +168,7 @@ func TestApi(t *testing.T) {
 			_, err = Compile[[]*dom.Node]("|*", nil, nil)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), notYet)
-			//_, err = Compile("*|*", nil, nil)
+			//_, err = Compile[[]*dom.Node]("*|*", nil, nil)
 			//assert.NotNil(t, err)
 			//assert.Contains(t, err.Error(), notYet)
 		})
@@ -182,20 +181,6 @@ func TestApi(t *testing.T) {
 			_, err = Compile[[]*dom.Node](":only-child(test)", nil, nil)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), "doesn't have any arguments")
-		})
-
-		t.Run("should throw if no parameter is supplied for pseudo", func(t *testing.T) {
-			options := &types.Options{
-				Pseudos: map[string]func(elem *dom.Node, value string) bool{
-					"foovalue": func(elem *dom.Node, subselect string) bool {
-						return domutils.GetAttributeValue(elem, "foo") == subselect
-					},
-				},
-			}
-
-			_, err := Compile[[]*dom.Node](":foovalue", options, nil)
-			assert.Nil(t, err) // we can't change the number of arguments in function
-			// assert.Contains(t, err.Error(), "requires an argument")
 		})
 	})
 

@@ -63,16 +63,20 @@ func (c *Cache[K, V]) Len() int {
  * This function wraps the given `matches` function in a function that caches
  * the results of the parent elements, so that the `matches` function only
  * needs to be called once for each subtree.
+ * @param next Matcher to run after this matcher succeeds.
+ * @param options Configuration object for cache behavior.
+ * @param options.cacheResults Whether results should be memoized by input root.
+ * @param matches Compiled matcher function to wrap with caching.
  */
 func CacheParentResults(
 	next *types.CompiledQuery,
 	options *types.Options,
-	matches func(elem *dom.Node, scope *dom.Node) bool,
+	matches func(element *dom.Node, scope *dom.Node) bool,
 ) *types.CompiledQuery {
 	if options != nil && options.CacheResults == types.OptNo {
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node, scope *dom.Node) bool {
-				return next.Match(elem, scope) && matches(elem, scope)
+			Match: func(element *dom.Node, scope *dom.Node) bool {
+				return next.Match(element, scope) && matches(element, scope)
 			},
 		}
 	}
@@ -80,24 +84,24 @@ func CacheParentResults(
 	// Use a cache to avoid re-checking children of an element.
 	resultCache := NewCache[dom.Node, bool]()
 
-	addResultToCache := func(elem *dom.Node, scope *dom.Node) bool {
-		result := matches(elem, scope)
+	addResultToCache := func(element *dom.Node, scope *dom.Node) bool {
+		result := matches(element, scope)
 
-		resultCache.Set(elem, result)
+		resultCache.Set(element, result)
 		return result
 	}
 
 	return &types.CompiledQuery{
-		Match: func(elem *dom.Node, scope *dom.Node) bool {
-			if !next.Match(elem, scope) {
+		Match: func(element *dom.Node, scope *dom.Node) bool {
+			if !next.Match(element, scope) {
 				return false
 			}
-			if cached, ok := resultCache.Get(elem); ok {
+			if cached, ok := resultCache.Get(element); ok {
 				return cached
 			}
 
 			// Check all of the element's parents.
-			node := elem
+			node := element
 			var result bool
 			var found bool
 
@@ -105,7 +109,7 @@ func CacheParentResults(
 				parent := GetElementParent(node)
 
 				if parent == nil {
-					return addResultToCache(elem, scope)
+					return addResultToCache(element, scope)
 				}
 
 				node = parent
@@ -115,7 +119,11 @@ func CacheParentResults(
 				}
 			}
 
-			return result && addResultToCache(elem, scope)
+			if result {
+				return addResultToCache(element, scope)
+			}
+
+			return false
 		},
 	}
 }

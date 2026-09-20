@@ -12,15 +12,14 @@ import (
 /**
  * Find all elements matching the query. If not in XML mode, the query will ignore
  * the contents of `<template>` elements.
- *
  * @param query - Function that returns true if the element matches the query.
- * @param elems - Nodes to query. If a node is an element, its children will be queried.
+ * @param nodes - Nodes to query. If a node is an element, its children will be queried.
  * @param options - Options for querying the document.
  * @returns All matching elements.
  */
 func FindAll(
 	query func(elem *dom.Node, scope *dom.Node) bool,
-	elems []*dom.Node,
+	nodes []*dom.Node,
 	scope *dom.Node,
 	options *types.Options,
 ) []*dom.Node {
@@ -31,7 +30,7 @@ func FindAll(
 
 	result := []*dom.Node{}
 	/** Stack of the arrays we are looking at. */
-	nodeStack := [][]*dom.Node{elems}
+	nodeStack := [][]*dom.Node{nodes}
 	/** Stack of the indices within the arrays. */
 	indexStack := []int{0}
 
@@ -53,22 +52,22 @@ func FindAll(
 		}
 
 		length = len(indexStack)
-		elem := nodeStack[length-1][indexStack[length-1]]
+		element := nodeStack[length-1][indexStack[length-1]]
 		indexStack[length-1]++
 
-		if !dom.IsTag(elem) {
+		if !dom.IsTag(element) {
 			continue
 		}
-		if query(elem, scope) {
-			result = append(result, elem)
+		if query(element, scope) {
+			result = append(result, element)
 		}
 
-		if xmlMode || domutils.GetName(elem) != "template" {
+		if xmlMode || domutils.GetName(element) != "template" {
 			/*
 			 * Add the children to the stack. We are depth-first, so this is
 			 * the next array we look at.
 			 */
-			children := domutils.GetChildren(elem)
+			children := domutils.GetChildren(element)
 
 			if len(children) > 0 {
 				nodeStack = append(nodeStack, children)
@@ -81,15 +80,14 @@ func FindAll(
 /**
  * Find the first element matching the query. If not in XML mode, the query will ignore
  * the contents of `<template>` elements.
- *
  * @param query - Function that returns true if the element matches the query.
- * @param elems - Nodes to query. If a node is an element, its children will be queried.
+ * @param nodes - Nodes to query. If a node is an element, its children will be queried.
  * @param options - Options for querying the document.
  * @returns The first matching element, or null if there was no match.
  */
 func FindOne(
 	query func(elem *dom.Node, scope *dom.Node) bool,
-	elems []*dom.Node,
+	nodes []*dom.Node,
 	scope *dom.Node,
 	options *types.Options,
 ) *dom.Node {
@@ -99,7 +97,7 @@ func FindOne(
 	}
 
 	/** Stack of the arrays we are looking at. */
-	nodeStack := [][]*dom.Node{elems}
+	nodeStack := [][]*dom.Node{nodes}
 	/** Stack of the indices within the arrays. */
 	indexStack := []int{0}
 
@@ -121,22 +119,22 @@ func FindOne(
 		}
 
 		length = len(indexStack)
-		elem := nodeStack[length-1][indexStack[length-1]]
+		element := nodeStack[length-1][indexStack[length-1]]
 		indexStack[length-1]++
 
-		if !dom.IsTag(elem) {
+		if !dom.IsTag(element) {
 			continue
 		}
-		if query(elem, scope) {
-			return elem
+		if query(element, scope) {
+			return element
 		}
 
-		if xmlMode || domutils.GetName(elem) != "template" {
+		if xmlMode || domutils.GetName(element) != "template" {
 			/*
 			 * Add the children to the stack. We are depth-first, so this is
 			 * the next array we look at.
 			 */
-			children := domutils.GetChildren(elem)
+			children := domutils.GetChildren(element)
 
 			if len(children) > 0 {
 				nodeStack = append(nodeStack, children)
@@ -146,21 +144,32 @@ func FindOne(
 	}
 }
 
+/**
+ * Get all element siblings after the provided node.
+ * @param element Element candidate being tested.
+ * @param adapter Adapter implementation used for DOM operations.
+ */
 func GetNextSiblings(
-	elem *dom.Node,
+	element *dom.Node,
 ) []*dom.Node {
-	siblings := domutils.GetSiblings(elem)
+	siblings := domutils.GetSiblings(element)
 	if len(siblings) <= 1 {
 		return nil
 	}
-	elemIndex := slices.Index(siblings, elem)
-	if elemIndex < 0 || elemIndex == len(siblings)-1 {
+
+	elementIndex := slices.Index(siblings, element)
+	if elementIndex == -1 || elementIndex == len(siblings)-1 {
 		return nil
 	}
 
-	return internal.FilterFunc(siblings[elemIndex+1:], dom.IsTag)
+	return internal.FilterFunc(siblings[elementIndex+1:], dom.IsTag)
 }
 
+/**
+ * Get the parent element of a node.
+ * @param node Node to inspect.
+ * @param adapter Adapter implementation used for DOM operations.
+ */
 func GetElementParent(
 	node *dom.Node,
 ) *dom.Node {

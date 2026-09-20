@@ -1,5 +1,6 @@
 package parser
 
+/** Discriminants for selector token kinds. */
 type SelectorType string
 
 const (
@@ -40,6 +41,7 @@ const (
 	AttributeActionStart   AttributeAction = "start"
 )
 
+/** Any selector token produced by the parser. */
 type Selector struct {
 	Type       SelectorType
 	Name       string
@@ -47,5 +49,5 @@ type Selector struct {
 	Data       *string
 	Action     AttributeAction
 	IgnoreCase IgnoreCaseMode
-	Children   [][]*Selector
+	Children   [][]*Selector // Payload used by pseudo selectors.
 }

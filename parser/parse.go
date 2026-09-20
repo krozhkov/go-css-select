@@ -74,7 +74,6 @@ func isUnpackPseudos(name string) bool {
 /**
  * Pseudo elements defined in CSS Level 1 and CSS Level 2 can be written with
  * a single colon; eg. :before will turn into ::before.
- *
  * @see {@link https://www.w3.org/TR/2018/WD-selectors-4-20181121/#pseudo-element-syntax}
  */
 func isPseudosToPseudoElements(name string) bool {
@@ -97,13 +96,14 @@ func String(s string) *string {
  * Checks whether a specific selector is a traversal.
  * This is useful eg. in swapping the order of elements that
  * are not traversals.
- *
  * @param selector Selector to check.
  */
 func IsTraversal(selector *Selector) bool {
 	switch selector.Type {
 	case SelectorTypeAdjacent, SelectorTypeChild, SelectorTypeDescendant, SelectorTypeParent, SelectorTypeSibling, SelectorTypeColumnCombinator:
 		return true
+	case SelectorTypeAttribute, SelectorTypePseudo, SelectorTypePseudoElement, SelectorTypeTag, SelectorTypeUniversal:
+		return false
 	default:
 		return false
 	}
@@ -154,7 +154,6 @@ func isWhitespace(c byte) bool {
 
 /**
  * Parses `selector`.
- *
  * @param selector Selector to parse.
  * @returns Returns a two-dimensional array.
  * The first dimension represents selectors separated by commas (eg. `sub1, sub2`),

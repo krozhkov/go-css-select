@@ -8,6 +8,14 @@ import (
 	"github.com/krozhkov/go-htmlparser2/dom"
 )
 
+/**
+ * Compile a pseudo selector into an executable query function.
+ * @param next Matcher to run after this matcher succeeds.
+ * @param selector Selector used to match elements.
+ * @param options Options that control this operation.
+ * @param context Context nodes used to scope selector matching.
+ * @param compileToken Function used to compile nested selector tokens.
+ */
 func CompilePseudoSelector(
 	next *types.CompiledQuery,
 	selector *parser.Selector,
@@ -38,8 +46,8 @@ func CompilePseudoSelector(
 
 	if userPseudo, ok := userPseudos[name]; ok {
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node, scope *dom.Node) bool {
-				return userPseudo(elem, data) && next.Match(elem, scope)
+			Match: func(element *dom.Node, scope *dom.Node) bool {
+				return userPseudo(element, data) && next.Match(element, scope)
 			},
 		}, nil
 	}
@@ -58,7 +66,7 @@ func CompilePseudoSelector(
 	}
 
 	if filterPseudo, ok := filters[name]; ok {
-		return filterPseudo(next, data, options, context)
+		return filterPseudo(next, data, options, context, compileToken)
 	}
 
 	if pseudo, ok := pseudos[name]; ok {
@@ -67,8 +75,8 @@ func CompilePseudoSelector(
 		}
 
 		return &types.CompiledQuery{
-			Match: func(elem *dom.Node, scope *dom.Node) bool {
-				return pseudo(elem, options) && next.Match(elem, scope)
+			Match: func(element *dom.Node, scope *dom.Node) bool {
+				return pseudo(element, options) && next.Match(element, scope)
 			},
 		}, nil
 	}

@@ -13,22 +13,22 @@ const (
 	OptNo
 )
 
+/**
+ * Public query options for go-css-select.
+ */
 type Options struct {
 	/**
 	 * When enabled, tag names will be case-sensitive.
-	 *
 	 * @default false
 	 */
 	XmlMode OptBool
 	/**
 	 * Lower-case attribute names.
-	 *
 	 * @default !xmlMode
 	 */
 	LowerCaseAttributeNames OptBool
 	/**
 	 * Lower-case tag names.
-	 *
 	 * @default !xmlMode
 	 */
 	LowerCaseTags OptBool
@@ -36,7 +36,6 @@ type Options struct {
 	 * Is the document in quirks mode?
 	 *
 	 * This will lead to .className and #id being case-insensitive.
-	 *
 	 * @default false
 	 */
 	QuirksMode OptBool
@@ -68,7 +67,6 @@ type Options struct {
 	 *
 	 * If relative selectors are disabled, selectors starting with a traversal
 	 * will lead to an error.
-	 *
 	 * @default true
 	 * @see {@link https://www.w3.org/TR/selectors-4/#relative}
 	 */
@@ -77,7 +75,6 @@ type Options struct {
 	 * Allow css-select to cache results for some selectors, sometimes greatly
 	 * improving querying performance. Disable this if your document can
 	 * change in between queries with the same compiled selector.
-	 *
 	 * @default true
 	 */
 	CacheResults OptBool
@@ -91,10 +88,16 @@ const (
 	MatchTypeAlwaysFalse
 )
 
+/**
+ * Executable selector query.
+ */
 type CompiledQuery struct {
 	Match                  func(node *dom.Node, scope *dom.Node) bool
 	ShouldTestNextSiblings bool
 	Type                   MatchType
 }
 
+/**
+ * Function used to compile parsed selector tokens.
+ */
 type CompileToken func(token [][]*parser.Selector, options *Options, context []*dom.Node) (*CompiledQuery, error)

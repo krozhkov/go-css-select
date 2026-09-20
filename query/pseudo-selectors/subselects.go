@@ -24,7 +24,6 @@ type Subselect = func(
  *
  * We can't cache selectors that start with a traversal (e.g. `>`, `+`, `~`),
  * or include a `:scope`.
- *
  * @param selector - The selector to check.
  * @returns Whether the selector has any properties that rely on the current element.
  */
@@ -34,21 +33,6 @@ func hasDependsOnCurrentElement(selector [][]*parser.Selector) bool {
 	}) >= 0
 }
 
-func copyOptions(
-	options *types.Options,
-) *types.Options {
-	if options == nil {
-		return &types.Options{}
-	}
-
-	opts := *options
-	// Not copied: context, rootFunc
-	opts.Context = nil
-	opts.RootFunc = nil
-
-	return &opts
-}
-
 func is(
 	next *types.CompiledQuery,
 	token [][]*parser.Selector,
@@ -56,21 +40,21 @@ func is(
 	context []*dom.Node,
 	compileToken types.CompileToken,
 ) (*types.CompiledQuery, error) {
-	query, err := compileToken(token, copyOptions(options), context)
+	compiledToken, err := compileToken(token, helpers.CopyOptions(options), context)
 	if err != nil {
 		return nil, err
 	}
 
-	if query.Type == types.MatchTypeAlwaysTrue {
+	if compiledToken.Type == types.MatchTypeAlwaysTrue {
 		return next, nil
 	}
-	if query.Type == types.MatchTypeAlwaysFalse {
-		return query, nil
+	if compiledToken.Type == types.MatchTypeAlwaysFalse {
+		return compiledToken, nil
 	}
 
 	return &types.CompiledQuery{
-		Match: func(elem *dom.Node, scope *dom.Node) bool {
-			return query.Match(elem, scope) && next.Match(elem, scope)
+		Match: func(element *dom.Node, scope *dom.Node) bool {
+			return compiledToken.Match(element, scope) && next.Match(element, scope)
 		},
 	}, nil
 }
@@ -80,6 +64,7 @@ func is(
  * doing this in src/pseudos.ts would lead to circular dependencies,
  * so we add them here
  */
+/** Pseudo selectors that compile nested selectors. */
 var subselects = map[string]Subselect{
 	"is": is,
 	/**
@@ -94,17 +79,17 @@ var subselects = map[string]Subselect{
 		context []*dom.Node,
 		compileToken types.CompileToken,
 	) (*types.CompiledQuery, error) {
-		query, err := compileToken(token, copyOptions(options), context)
+		compiledToken, err := compileToken(token, helpers.CopyOptions(options), context)
 		if err != nil {
 			return nil, err
 		}
 
-		if query.Type == types.MatchTypeAlwaysFalse {
+		if compiledToken.Type == types.MatchTypeAlwaysFalse {
 			return next, nil
 		}
-		if query.Type == types.MatchTypeAlwaysTrue {
+		if compiledToken.Type == types.MatchTypeAlwaysTrue {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node, scope *dom.Node) bool {
+				Match: func(element *dom.Node, scope *dom.Node) bool {
 					return false
 				},
 				Type: types.MatchTypeAlwaysFalse,
@@ -113,7 +98,7 @@ var subselects = map[string]Subselect{
 
 		return &types.CompiledQuery{
 			Match: func(elem *dom.Node, scope *dom.Node) bool {
-				return !query.Match(elem, scope) && next.Match(elem, scope)
+				return !compiledToken.Match(elem, scope) && next.Match(elem, scope)
 			},
 		}, nil
 	},
@@ -124,10 +109,10 @@ var subselects = map[string]Subselect{
 		_ []*dom.Node,
 		compileToken types.CompileToken,
 	) (*types.CompiledQuery, error) {
-		opts := copyOptions(options)
-		opts.RelativeSelector = types.OptYes
+		copiedOptions := helpers.CopyOptions(options)
+		copiedOptions.RelativeSelector = types.OptYes
 
-		compiled, err := compileToken(subselect, opts, nil)
+		compiled, err := compileToken(subselect, copiedOptions, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -140,8 +125,8 @@ var subselects = map[string]Subselect{
 
 		// If `compiled` is `trueFunc`, we can use this.
 		if compiled.Type == types.MatchTypeAlwaysTrue {
-			hasOne := func(elem *dom.Node, scope *dom.Node) bool {
-				return helpers.FindOne(compiled.Match, domutils.GetChildren(elem), scope, options) != nil
+			hasOne := func(element *dom.Node, scope *dom.Node) bool {
+				return helpers.FindOne(compiled.Match, domutils.GetChildren(element), scope, options) != nil
 			}
 
 			if skipCache {
@@ -155,17 +140,17 @@ var subselects = map[string]Subselect{
 			}
 		}
 
-		hasMatch := func(elem *dom.Node, scope *dom.Node) bool {
-			children := domutils.GetChildren(elem)
+		hasMatch := func(element *dom.Node, scope *dom.Node) bool {
+			children := domutils.GetChildren(element)
 
 			if compiled.ShouldTestNextSiblings {
-				nextSiblings := helpers.GetNextSiblings(elem)
+				nextSiblings := helpers.GetNextSiblings(element)
 				children = slices.Grow(children, len(nextSiblings))
 				children = append(children, nextSiblings...)
 			}
 
 			matchForScope := func(node *dom.Node, _ *dom.Node) bool {
-				return compiled.Match(node, elem) // pass "elem" as a new scope
+				return compiled.Match(node, element) // pass "elem" as a new scope
 			}
 
 			return helpers.FindOne(matchForScope, children, scope, options) != nil
@@ -173,8 +158,8 @@ var subselects = map[string]Subselect{
 
 		if skipCache {
 			return &types.CompiledQuery{
-				Match: func(elem *dom.Node, scope *dom.Node) bool {
-					return next.Match(elem, scope) && hasMatch(elem, scope)
+				Match: func(element *dom.Node, scope *dom.Node) bool {
+					return next.Match(element, scope) && hasMatch(element, scope)
 				},
 			}, nil
 		}

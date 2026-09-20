@@ -7,6 +7,10 @@ import (
 	"github.com/krozhkov/go-css-select/query/internal"
 )
 
+/**
+ * Check whether a selector token performs traversal.
+ * @param token Selector token(s) to compile.
+ */
 func IsTraversal(token *parser.Selector) bool {
 	return token.Type == "_flexibleDescendant" || parser.IsTraversal(token)
 }
@@ -14,25 +18,24 @@ func IsTraversal(token *parser.Selector) bool {
 /**
  * Sort the parts of the passed selector, as there is potential for
  * optimization (some types of selectors are faster than others).
- *
  * @param arr Selector to sort
  */
-func SortRules(arr []*parser.Selector) {
-	ratings := internal.MapFunc(arr, GetQuality)
-	for i := 1; i < len(arr); i++ {
-		procNew := ratings[i]
+func SortRules(array []*parser.Selector) {
+	ratings := internal.MapFunc(array, GetQuality)
+	for index := 1; index < len(array); index++ {
+		procNew := ratings[index]
 
 		if procNew < 0 {
 			continue
 		}
 
 		// Use insertion sort to move the token to the correct position.
-		for j := i; j > 0 && procNew < ratings[j-1]; j-- {
-			token := arr[j]
-			arr[j] = arr[j-1]
-			arr[j-1] = token
-			ratings[j] = ratings[j-1]
-			ratings[j-1] = procNew
+		for currentIndex := index; currentIndex > 0 && procNew < ratings[currentIndex-1]; currentIndex-- {
+			token := array[currentIndex]
+			array[currentIndex] = array[currentIndex-1]
+			array[currentIndex-1] = token
+			ratings[currentIndex] = ratings[currentIndex-1]
+			ratings[currentIndex-1] = procNew
 		}
 	}
 }
@@ -68,7 +71,6 @@ func getAttributeQuality(token *parser.Selector) int {
 /**
  * Determine the quality of the passed token. The higher the number, the
  * faster the token is to execute.
- *
  * @param token Token to get the quality of.
  * @returns The token's quality.
  */
@@ -93,25 +95,28 @@ func GetQuality(token *parser.Selector) int {
 		}
 	case parser.SelectorTypePseudo:
 		{
-			if token.Data != nil && *token.Data == "" {
-				return 3
-			}
-			if token.Name == "has" || token.Name == "contains" || token.Name == "icontains" {
-				// Expensive in any case — run as late as possible.
-				return 0
-			}
-			if len(token.Children) > 0 {
-				// Eg. `:is`, `:not`
-				quality := slices.Min(internal.MapFunc(token.Children, func(d []*parser.Selector) int {
-					return slices.Min(internal.MapFunc(d, GetQuality))
-				}))
-				if quality < 0 {
-					// If we have traversals, try to avoid executing this selector
+			if (token.Data != nil && *token.Data != "") || len(token.Children) > 0 {
+				if token.Name == "has" || token.Name == "contains" || token.Name == "icontains" {
+					// Expensive in any case — run as late as possible.
 					return 0
 				}
-				return quality
+
+				if len(token.Children) > 0 {
+					// Eg. `:is`, `:not`
+					quality := slices.Min(internal.MapFunc(token.Children, func(d []*parser.Selector) int {
+						return slices.Min(internal.MapFunc(d, GetQuality))
+					}))
+					if quality < 0 {
+						// If we have traversals, try to avoid executing this selector
+						return 0
+					}
+					return quality
+				}
+
+				return 2
+			} else {
+				return 3
 			}
-			return 2
 		}
 	default:
 		{
@@ -120,6 +125,10 @@ func GetQuality(token *parser.Selector) int {
 	}
 }
 
+/**
+ * Check whether a token or nested token includes `:scope`.
+ * @param t Selector token under inspection.
+ */
 func IncludesScopePseudo(t *parser.Selector) bool {
 	return t.Type == parser.SelectorTypePseudo &&
 		(t.Name == "scope" || (len(t.Children) > 0 && slices.IndexFunc(t.Children, func(d []*parser.Selector) bool { return slices.IndexFunc(d, IncludesScopePseudo) >= 0 }) >= 0))

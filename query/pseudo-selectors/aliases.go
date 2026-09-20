@@ -6,7 +6,6 @@ import "fmt"
  * Only text controls can be made read-only, since for other controls (such
  * as checkboxes and buttons) there is no useful distinction between being
  * read-only and being disabled.
- *
  * @see {@link https://html.spec.whatwg.org/multipage/input.html#attr-input-readonly}
  */
 var textControl = "input:is([type=text i],[type=search i],[type=url i],[type=tel i],[type=email i],[type=password i],[type=date i],[type=month i],[type=week i],[type=time i],[type=datetime-local i],[type=number i])"
@@ -28,7 +27,7 @@ var aliases = map[string]string{
         optgroup[disabled] > option,
         fieldset[disabled]:not(fieldset[disabled] legend:first-of-type *)
     )`,
-	"enabled":  ":not(:disabled)",
+	"enabled":  ":is(button, input, select, textarea, optgroup, option, fieldset):not(:disabled)",
 	"checked":  ":is(:is(input[type=radio], input[type=checkbox])[checked], :selected)",
 	"required": ":is(input, select, textarea)[required]",
 	"optional": ":is(input, select, textarea):not([required])",
@@ -43,7 +42,6 @@ var aliases = map[string]string{
 	 * or are the first option element in a select element that does not have
 	 * the `multiple` attribute and does not have any option elements with the
 	 * `selected` attribute.
-	 *
 	 * @see https://html.spec.whatwg.org/multipage/form-elements.html#concept-option-selectedness
 	 */
 	"selected": "option:is([selected], select:not([multiple]):not(:has(> option[selected])) > :first-of-type)",

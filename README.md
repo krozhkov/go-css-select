@@ -1,6 +1,11 @@
 # go-css-select
 Go port of css-select: a CSS selector compiler &amp; engine
 
+**The current codebase is synchronized and corresponds to the following original package versions:**
+* `css-what` 8.0.0
+* `css-select` 7.0.0
+* `nth-check` 3.0.1
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
